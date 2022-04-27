@@ -1,10 +1,12 @@
 package main
 
 import (
-	"blackjack/models"
-	// "blackjack/ui"
 	"fmt"
 	"strconv"
+
+	// "blackjack/ui"
+	"blackjack/models"
+	"blackjack/server"
 )
 
 func readPlayerAction() string {
@@ -106,6 +108,9 @@ func play(deck *models.Deck, numPlayers int, players []models.Player) {
 
 func main() {
 	fmt.Println("Welcome to Blackjack")
+	fmt.Println("Running server:")
+	output := server.Server{}
+	output.Serve()
 
 	fmt.Println("Getting a fresh deck of cards")
 	deck := models.Deck{}
