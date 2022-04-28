@@ -10,21 +10,22 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
-func sendData(conn net.Conn, msg string) {
+func sendData(conn net.Conn, msg string) string {
 	fmt.Println("Sending message...")
 	err := wsutil.WriteClientMessage(conn, ws.OpText, []byte(msg))
 	if err != nil {
 		fmt.Printf("Send failed")
-		return
+		return "Failed"
 	}
 	fmt.Println("Sent ", msg)
+	return "OK"
 }
 
 func readData(conn net.Conn) string {
 	msg_bytes, _, err := wsutil.ReadServerData(conn)
 	if err != nil {
 		fmt.Println("Receive failed")
-		return ""
+		return "Failed"
 	}
 	msg := string(msg_bytes)
 	fmt.Println("Received ", msg)
@@ -41,49 +42,24 @@ func play(i int, wg *sync.WaitGroup) {
 
 	fmt.Printf("%d connected\n", i)
 	fmt.Println("Waiting for game to begin")
-	_ = readData(conn)
 
 	dealerHand := readData(conn)
 	fmt.Println(dealerHand)
 
-	// fmt.Println("Received ", msg)
+	for {
+		fmt.Println("Sending S")
+		res := sendData(conn, "S")
+		if res == "Failed" {
+			break
+		}
 
-	// msg := "I want to play"
-	// tries := 0
-	// for {
-	// 	sendData(conn, msg)
-
-	// 	msg, op, err := wsutil.ReadServerData(conn)
-	// 	if err != nil {
-	// 		fmt.Printf("%d can not receive: %v\n", i, err)
-	// 		return
-	// 	}
-	// 	fmt.Printf("%d receive: %s, type: %v\n", i, msg, op)
-	// 	if bytes.Equal(msg, []byte("OK")) {
-	// 		fmt.Println("I'm in ", i)
-	// 		break
-	// 	}
-	// 	if tries >= 3 {
-	// 		fmt.Println("Tried, but failed, giving up :(")
-	// 		break
-	// 	}
-
-	// 	time.Sleep(time.Duration(3) * time.Second)
-	// }
-
-	// msg, op, err := wsutil.ReadServerData(conn)
-	// if err != nil {
-	// 	fmt.Printf("%d can not receive: %v\n", i, err)
-	// 	return
-	// }
-	// fmt.Printf("%d receive: %s, type: %v\n", i, msg, op)
-
-	// msg, op, err = wsutil.ReadServerData(conn)
-	// if err != nil {
-	// 	fmt.Printf("%d can not receive: %v\n", i, err)
-	// 	return
-	// }
-	// fmt.Printf("%d receive: %s, type: %v\n", i, msg, op)
+		fmt.Println("Reading")
+		res = readData(conn)
+		if res == "Failed" {
+			break
+		}
+		fmt.Println(res)
+	}
 
 	err = conn.Close()
 	if err != nil {

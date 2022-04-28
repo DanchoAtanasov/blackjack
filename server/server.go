@@ -16,13 +16,14 @@ type NumPlayers struct {
 	value int
 }
 
-func readData(conn net.Conn) []byte {
+func ReadData(conn net.Conn) string {
 	msg, _, err := wsutil.ReadClientData(conn)
 	if err != nil {
 		// handle error
 	}
-	fmt.Println("Received: ", msg)
-	return msg
+	msg_str := string(msg)
+	fmt.Println("Received: ", msg_str)
+	return msg_str
 }
 
 func SendData(conn net.Conn, msg string) {
@@ -37,6 +38,14 @@ type Server struct {
 	newConnectionMutex sync.Mutex
 	someCond           sync.Cond
 	numPlayers         NumPlayers
+	currentPlayer      int
+}
+
+func (server *Server) GetNextPlayer() *net.Conn {
+	currPlayerConn := server.connections[server.currentPlayer]
+	server.currentPlayer += 1
+	server.currentPlayer %= len(server.connections)
+	return &currPlayerConn
 }
 
 func (server *Server) SendAll(msg string) {

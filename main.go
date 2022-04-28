@@ -9,11 +9,12 @@ import (
 	"blackjack/server"
 )
 
-func readPlayerAction() string {
+func readPlayerAction(output *server.Server) string {
 	fmt.Println("Hit(H) or Stand(S)")
 	var input string
 	for {
-		fmt.Scanln(&input)
+		// fmt.Scanln(&input)
+		input = server.ReadData(*output.GetNextPlayer())
 		if input == "H" || input == "S" {
 			break
 		}
@@ -22,7 +23,7 @@ func readPlayerAction() string {
 	return input
 }
 
-func takeAction(playerName string, hand *models.Hand, deck *models.Deck) {
+func takeAction(playerName string, hand *models.Hand, deck *models.Deck, output *server.Server) {
 	for {
 		fmt.Printf("%s's hand is %v\n", playerName, hand.Cards)
 		fmt.Printf("Current count: %d\n", hand.Sum)
@@ -38,7 +39,7 @@ func takeAction(playerName string, hand *models.Hand, deck *models.Deck) {
 			} else if hand.Sum == 17 && hand.NumAces <= 0 {
 				break
 			}
-		} else if readPlayerAction() == "S" {
+		} else if readPlayerAction(output) == "S" {
 			break
 		}
 		hand.AddCard(deck.DealCard())
@@ -64,7 +65,7 @@ func play(deck *models.Deck, numPlayers int, players []models.Player, output *se
 	}
 
 	fmt.Printf("Dealer's hand: %v\n", dealerHand.Cards)
-	output.SendAll("Dealer has something")
+	output.SendAll(dealerHand.ToJson())
 
 	// Players' turn
 	for i := 0; i < numPlayers; i++ {
@@ -78,12 +79,12 @@ func play(deck *models.Deck, numPlayers int, players []models.Player, output *se
 			continue
 		}
 
-		takeAction(players[i].Name, &players[i].Hand, deck)
+		takeAction(players[i].Name, &players[i].Hand, deck, output)
 		fmt.Println("---------------------------------")
 	}
 
 	// Dealer's turn
-	takeAction("Dealer", &dealerHand, deck)
+	takeAction("Dealer", &dealerHand, deck, output)
 	fmt.Println("---------------------------------")
 
 	for i := 0; i < numPlayers; i++ {

@@ -53,7 +53,7 @@ func ShuffleDeck(deck Deck) {
 }
 
 func ShanoShuffleDeck(deck *Deck) {
-	deck.cards[0] = Card{valueStr: "A", suit: "Spades", value: 11}
-	deck.cards[1] = Card{valueStr: "A", suit: "Clubs", value: 11}
-	deck.cards[2] = Card{valueStr: "K", suit: "Spades", value: 10}
+	deck.cards[0] = Card{ValueStr: "A", Suit: "Spades", value: 11}
+	deck.cards[1] = Card{ValueStr: "A", Suit: "Clubs", value: 11}
+	deck.cards[2] = Card{ValueStr: "K", Suit: "Spades", value: 10}
 }

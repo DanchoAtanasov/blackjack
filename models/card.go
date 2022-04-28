@@ -1,7 +1,7 @@
 package models
 
 type Card struct {
-	valueStr string
-	suit     string
+	ValueStr string
+	Suit     string
 	value    int
 }

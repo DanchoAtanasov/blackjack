@@ -1,5 +1,9 @@
 package models
 
+import (
+	"encoding/json"
+)
+
 type handInterface interface {
 	AddCard(Card)
 	increaseSum(int)
@@ -14,7 +18,7 @@ type Hand struct {
 }
 
 func (hand *Hand) AddCard(card Card) {
-	if card.valueStr == "A" {
+	if card.ValueStr == "A" {
 		hand.NumAces += 1
 	}
 	hand.Cards = append(hand.Cards, card)
@@ -31,6 +35,11 @@ func (hand *Hand) increaseSum(value int) {
 
 func (hand Hand) IsBust() bool {
 	return hand.Sum > 21
+}
+
+func (hand *Hand) ToJson() string {
+	result, _ := json.Marshal(hand.Cards)
+	return string(result)
 }
 
 func GetWinner(handA Hand, handB Hand) int {
