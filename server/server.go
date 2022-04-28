@@ -16,10 +16,6 @@ type NumPlayers struct {
 	value int
 }
 
-func gameplayLoop() {
-
-}
-
 func readData(conn net.Conn) []byte {
 	msg, _, err := wsutil.ReadClientData(conn)
 	if err != nil {
@@ -29,64 +25,63 @@ func readData(conn net.Conn) []byte {
 	return msg
 }
 
-func sendData(conn net.Conn, msg []byte) {
-	err := wsutil.WriteServerMessage(conn, ws.OpBinary, msg)
+func SendData(conn net.Conn, msg string) {
+	err := wsutil.WriteServerMessage(conn, ws.OpText, []byte(msg))
 	if err != nil {
 		// handle error
 	}
 }
 
-func findPlayers(conn net.Conn, numPlayers *NumPlayers, cond *sync.Cond) {
-	fmt.Println("In find")
-	_ = readData(conn)
-	var resp []byte
-
-	numPlayers.mutex.Lock()
-	{
-		if numPlayers.value < 2 {
-			numPlayers.value += 1
-			fmt.Println("Players are now ", numPlayers.value)
-			resp = []byte("OK")
-		} else {
-			resp = []byte("FULL")
-			fmt.Println("Room is full ", numPlayers.value)
-		}
-	}
-	if numPlayers.value == 2 {
-		cond.Broadcast()
-	}
-	numPlayers.mutex.Unlock()
-
-	sendData(conn, resp)
-
-	cond.L.Lock()
-	for numPlayers.value < 2 {
-		cond.Wait()
-	}
-	fmt.Println("Got 2, lets' play")
-	cond.L.Unlock()
-
-	resp = []byte("Im going to start dealing")
-	sendData(conn, resp)
+type Server struct {
+	connections        []net.Conn
+	newConnectionMutex sync.Mutex
+	someCond           sync.Cond
+	numPlayers         NumPlayers
 }
 
-type Server struct {
-	connections []net.Conn
+func (server *Server) SendAll(msg string) {
+	for _, conn := range server.connections {
+		SendData(conn, msg)
+	}
+}
+
+func (server *Server) registerPlayer(conn *net.Conn) {
+	server.newConnectionMutex.Lock()
+	server.connections = append(server.connections, *conn)
+	if len(server.connections) == 2 {
+		server.someCond.Broadcast()
+	}
+	server.newConnectionMutex.Unlock()
+}
+
+func (server *Server) WaitForPlayers() {
+	fmt.Println("Waiting for players")
+	server.someCond.L.Lock()
+	for len(server.connections) != 2 {
+		server.someCond.Wait()
+	}
+	server.someCond.L.Unlock()
+	fmt.Println("Wait is over!")
+}
+
+func NewServer() Server {
+	server := Server{}
+	server.someCond = *sync.NewCond(&server.newConnectionMutex)
+	return server // TODO: fix this copy of lock
 }
 
 func (server *Server) Serve() {
 	port := 8080
+	port_str := ":" + strconv.Itoa(port)
 	fmt.Println("Serving on port", port)
 
-	numPlayers := NumPlayers{value: 0}
-	cond := sync.NewCond(&numPlayers.mutex)
-	http.ListenAndServe(":"+strconv.Itoa(port), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.ListenAndServe(port_str, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
 			// handle error
 		}
+
 		fmt.Println("New player connected")
-		// go doNothing(conn, &numPlayers)
-		go findPlayers(conn, &numPlayers, cond)
+		go server.registerPlayer(&conn)
 	}))
 }

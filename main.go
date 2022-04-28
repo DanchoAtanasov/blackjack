@@ -51,7 +51,7 @@ func clearHands(players []models.Player) {
 	}
 }
 
-func play(deck *models.Deck, numPlayers int, players []models.Player) {
+func play(deck *models.Deck, numPlayers int, players []models.Player, output *server.Server) {
 	dealerHand := models.Hand{}
 
 	fmt.Println("Dealing")
@@ -64,6 +64,7 @@ func play(deck *models.Deck, numPlayers int, players []models.Player) {
 	}
 
 	fmt.Printf("Dealer's hand: %v\n", dealerHand.Cards)
+	output.SendAll("Dealer has something")
 
 	// Players' turn
 	for i := 0; i < numPlayers; i++ {
@@ -109,8 +110,9 @@ func play(deck *models.Deck, numPlayers int, players []models.Player) {
 func main() {
 	fmt.Println("Welcome to Blackjack")
 	fmt.Println("Running server:")
-	output := server.Server{}
-	output.Serve()
+	output := server.NewServer()
+	go output.Serve()
+	output.WaitForPlayers()
 
 	fmt.Println("Getting a fresh deck of cards")
 	deck := models.Deck{}
@@ -120,13 +122,15 @@ func main() {
 	models.ShuffleDeck(deck)
 	// models.ShanoShuffleDeck(&deck) // TODO remove
 
-	fmt.Print("How many rounds?: ")
-	var numRounds int
-	fmt.Scanln(&numRounds)
+	// fmt.Print("How many rounds?: ")
+	// var numRounds int
+	// fmt.Scanln(&numRounds)
+	numRounds := 2
 
-	fmt.Print("How many players?: ")
-	var numPlayers int
-	fmt.Scanln(&numPlayers)
+	// fmt.Print("How many players?: ")
+	// var numPlayers int
+	numPlayers := 2
+	// fmt.Scanln(&numPlayers)
 
 	var players []models.Player
 	for i := 0; i < numPlayers; i++ {
@@ -140,7 +144,7 @@ func main() {
 	fmt.Println("Lets play!")
 	for round := 0; round < numRounds; round++ {
 		fmt.Printf("----------Round %d----------\n", round+1)
-		play(&deck, numPlayers, players)
+		play(&deck, numPlayers, players, &output)
 		// TODO reshuffle when deck is low
 	}
 
