@@ -12,7 +12,6 @@ import (
 )
 
 func sendData(conn net.Conn, msg string) string {
-	fmt.Println("Sending message...")
 	err := wsutil.WriteClientMessage(conn, ws.OpText, []byte(msg))
 	if err != nil {
 		fmt.Printf("Send failed")
@@ -53,7 +52,13 @@ func play(i int, wg *sync.WaitGroup) {
 			break
 		}
 
-		currentCount, _ := strconv.Atoi(currentCountString)
+		currentCount, err := strconv.Atoi(currentCountString)
+		if err != nil {
+			// TODO fix this, dealer hand is coming here, for now read another message
+			currentCountString = readData(conn)
+			currentCount, _ = strconv.Atoi(currentCountString)
+		}
+
 		fmt.Println("Current hand: ", currentCount)
 		var action string
 		if currentCount < 15 {
@@ -61,7 +66,7 @@ func play(i int, wg *sync.WaitGroup) {
 		} else {
 			action = "S"
 		}
-		fmt.Println("Sending ", action)
+
 		res := sendData(conn, action)
 		if res == "Failed" {
 			break
