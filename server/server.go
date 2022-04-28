@@ -41,11 +41,15 @@ type Server struct {
 	currentPlayer      int
 }
 
-func (server *Server) GetNextPlayer() *net.Conn {
+func (server *Server) GetCurrPlayerConn() *net.Conn {
 	currPlayerConn := server.connections[server.currentPlayer]
+	return &currPlayerConn
+}
+
+func (server *Server) ChangePlayer() {
+	fmt.Println("Changing players")
 	server.currentPlayer += 1
 	server.currentPlayer %= len(server.connections)
-	return &currPlayerConn
 }
 
 func (server *Server) SendAll(msg string) {

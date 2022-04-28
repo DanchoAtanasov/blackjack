@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 
 	"github.com/gobwas/ws"
@@ -47,18 +48,24 @@ func play(i int, wg *sync.WaitGroup) {
 	fmt.Println(dealerHand)
 
 	for {
-		fmt.Println("Sending S")
-		res := sendData(conn, "S")
-		if res == "Failed" {
+		currentCountString := readData(conn)
+		if currentCountString == "Failed" {
 			break
 		}
 
-		fmt.Println("Reading")
-		res = readData(conn)
+		currentCount, _ := strconv.Atoi(currentCountString)
+		fmt.Println("Current hand: ", currentCount)
+		var action string
+		if currentCount < 15 {
+			action = "H"
+		} else {
+			action = "S"
+		}
+		fmt.Println("Sending ", action)
+		res := sendData(conn, action)
 		if res == "Failed" {
 			break
 		}
-		fmt.Println(res)
 	}
 
 	err = conn.Close()

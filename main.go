@@ -9,12 +9,16 @@ import (
 	"blackjack/server"
 )
 
+func sendPlayerCount(count int, output *server.Server) {
+	server.SendData(*output.GetCurrPlayerConn(), strconv.Itoa(count))
+}
+
 func readPlayerAction(output *server.Server) string {
 	fmt.Println("Hit(H) or Stand(S)")
 	var input string
 	for {
 		// fmt.Scanln(&input)
-		input = server.ReadData(*output.GetNextPlayer())
+		input = server.ReadData(*output.GetCurrPlayerConn())
 		if input == "H" || input == "S" {
 			break
 		}
@@ -39,10 +43,18 @@ func takeAction(playerName string, hand *models.Hand, deck *models.Deck, output 
 			} else if hand.Sum == 17 && hand.NumAces <= 0 {
 				break
 			}
-		} else if readPlayerAction(output) == "S" {
-			break
+		} else {
+			sendPlayerCount(hand.Sum, output)
+			input := readPlayerAction(output)
+			if input == "S" {
+				break
+			}
 		}
+
 		hand.AddCard(deck.DealCard())
+	}
+	if playerName != "Dealer" {
+		output.ChangePlayer()
 	}
 }
 
