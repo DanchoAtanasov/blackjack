@@ -129,27 +129,20 @@ func main() {
 
 	fmt.Println("Getting a fresh deck of cards")
 	deck := models.Deck{}
-	deck.BuildDeck()
+	deck.BuildDeck(6)
 
 	fmt.Println("Shuffling cards...")
 	models.ShuffleDeck(deck)
 	// models.ShanoShuffleDeck(&deck) // TODO remove
 
-	// fmt.Print("How many rounds?: ")
-	// var numRounds int
-	// fmt.Scanln(&numRounds)
-	numRounds := 2
-
-	// fmt.Print("How many players?: ")
-	// var numPlayers int
-	numPlayers := 2
-	// fmt.Scanln(&numPlayers)
+	numRounds := 100
+	numPlayers := 6
 
 	var players []models.Player
 	for i := 0; i < numPlayers; i++ {
 		players = append(players, models.Player{
 			Name:       "Player " + strconv.Itoa(i+1),
-			BuyIn:      10,
+			BuyIn:      100,
 			CurrentBet: 1,
 		})
 	}
@@ -159,6 +152,7 @@ func main() {
 		fmt.Printf("----------Round %d----------\n", round+1)
 		play(&deck, numPlayers, players, &output)
 		// TODO reshuffle when deck is low
+		deck = *models.ShuffleDeckIfLow(&deck, 150)
 	}
 
 	fmt.Println("---------------------------------")

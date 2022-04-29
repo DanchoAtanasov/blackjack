@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -29,10 +30,12 @@ type Deck struct {
 	cards []Card
 }
 
-func (deck *Deck) BuildDeck() {
-	for _, suit := range suites {
-		for _, val := range cardValues {
-			deck.cards = append(deck.cards, Card{val, suit, cardValuesMap[val]})
+func (deck *Deck) BuildDeck(deckSize int) {
+	for i := 0; i < deckSize; i++ {
+		for _, suit := range suites {
+			for _, val := range cardValues {
+				deck.cards = append(deck.cards, Card{val, suit, cardValuesMap[val]})
+			}
 		}
 	}
 }
@@ -41,6 +44,17 @@ func (deck *Deck) DealCard() Card {
 	dealtCard := deck.cards[0]
 	deck.cards = deck.cards[1:]
 	return dealtCard
+}
+
+func ShuffleDeckIfLow(deck *Deck, threshold int) *Deck {
+	if len(deck.cards) > threshold {
+		return deck
+	}
+	fmt.Println("Deck is below threshold, shuffling...")
+	newDeck := Deck{}
+	newDeck.BuildDeck(6)
+	ShuffleDeck(newDeck)
+	return &newDeck
 }
 
 func ShuffleDeck(deck Deck) {

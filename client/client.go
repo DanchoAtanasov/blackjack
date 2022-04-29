@@ -61,7 +61,7 @@ func play(i int, wg *sync.WaitGroup) {
 
 		fmt.Println("Current hand: ", currentCount)
 		var action string
-		if currentCount < 15 {
+		if currentCount < 16 {
 			action = "H"
 		} else {
 			action = "S"
@@ -83,7 +83,8 @@ func play(i int, wg *sync.WaitGroup) {
 
 func main() {
 	var wg sync.WaitGroup
-	for i := 0; i < 2; i++ {
+	numPlayers := 6
+	for i := 0; i < numPlayers; i++ {
 		wg.Add(1)
 		go play(i, &wg)
 	}

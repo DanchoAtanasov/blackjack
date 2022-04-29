@@ -11,10 +11,7 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
-type NumPlayers struct {
-	mutex sync.Mutex
-	value int
-}
+var roomLimit int = 6
 
 func ReadData(conn net.Conn) string {
 	msg, _, err := wsutil.ReadClientData(conn)
@@ -37,7 +34,6 @@ type Server struct {
 	connections        []net.Conn
 	newConnectionMutex sync.Mutex
 	someCond           sync.Cond
-	numPlayers         NumPlayers
 	currentPlayer      int
 }
 
@@ -61,7 +57,7 @@ func (server *Server) SendAll(msg string) {
 func (server *Server) registerPlayer(conn *net.Conn) {
 	server.newConnectionMutex.Lock()
 	server.connections = append(server.connections, *conn)
-	if len(server.connections) == 2 {
+	if len(server.connections) == roomLimit {
 		server.someCond.Broadcast()
 	}
 	server.newConnectionMutex.Unlock()
@@ -70,7 +66,7 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 func (server *Server) WaitForPlayers() {
 	fmt.Println("Waiting for players")
 	server.someCond.L.Lock()
-	for len(server.connections) != 2 {
+	for len(server.connections) != roomLimit {
 		server.someCond.Wait()
 	}
 	server.someCond.L.Unlock()
