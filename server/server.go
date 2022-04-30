@@ -9,9 +9,9 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
-)
 
-var roomLimit int = 6
+	settings "blackjack/configs"
+)
 
 func ReadData(conn net.Conn) string {
 	msg, _, err := wsutil.ReadClientData(conn)
@@ -43,7 +43,6 @@ func (server *Server) GetCurrPlayerConn() *net.Conn {
 }
 
 func (server *Server) ChangePlayer() {
-	fmt.Println("Changing players")
 	server.currentPlayer += 1
 	server.currentPlayer %= len(server.connections)
 }
@@ -57,7 +56,7 @@ func (server *Server) SendAll(msg string) {
 func (server *Server) registerPlayer(conn *net.Conn) {
 	server.newConnectionMutex.Lock()
 	server.connections = append(server.connections, *conn)
-	if len(server.connections) == roomLimit {
+	if len(server.connections) == settings.RoomSize {
 		server.someCond.Broadcast()
 	}
 	server.newConnectionMutex.Unlock()
@@ -66,7 +65,7 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 func (server *Server) WaitForPlayers() {
 	fmt.Println("Waiting for players")
 	server.someCond.L.Lock()
-	for len(server.connections) != roomLimit {
+	for len(server.connections) != settings.RoomSize {
 		server.someCond.Wait()
 	}
 	server.someCond.L.Unlock()

@@ -30,7 +30,9 @@ type Deck struct {
 	cards []Card
 }
 
-func (deck *Deck) BuildDeck(deckSize int) {
+func GetNewDeck(deckSize int) Deck {
+	deck := Deck{}
+	deck.cards = make([]Card, 0, deckSize)
 	for i := 0; i < deckSize; i++ {
 		for _, suit := range suites {
 			for _, val := range cardValues {
@@ -38,6 +40,8 @@ func (deck *Deck) BuildDeck(deckSize int) {
 			}
 		}
 	}
+	ShuffleDeck(deck)
+	return deck
 }
 
 func (deck *Deck) DealCard() Card {
@@ -51,9 +55,7 @@ func ShuffleDeckIfLow(deck *Deck, threshold int) *Deck {
 		return deck
 	}
 	fmt.Println("Deck is below threshold, shuffling...")
-	newDeck := Deck{}
-	newDeck.BuildDeck(6)
-	ShuffleDeck(newDeck)
+	newDeck := GetNewDeck(6)
 	return &newDeck
 }
 

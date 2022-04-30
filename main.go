@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	// "blackjack/ui"
+	settings "blackjack/configs"
 	"blackjack/models"
 	"blackjack/server"
 )
@@ -17,7 +18,6 @@ func readPlayerAction(output *server.Server) string {
 	fmt.Println("Hit(H) or Stand(S)")
 	var input string
 	for {
-		// fmt.Scanln(&input)
 		input = server.ReadData(*output.GetCurrPlayerConn())
 		if input == "H" || input == "S" {
 			break
@@ -64,7 +64,7 @@ func clearHands(players []models.Player) {
 	}
 }
 
-func play(deck *models.Deck, numPlayers int, players []models.Player, output *server.Server) {
+func play(deck *models.Deck, players []models.Player, output *server.Server) {
 	dealerHand := models.Hand{}
 
 	fmt.Println("Dealing")
@@ -80,7 +80,7 @@ func play(deck *models.Deck, numPlayers int, players []models.Player, output *se
 	output.SendAll(dealerHand.ToJson())
 
 	// Players' turn
-	for i := 0; i < numPlayers; i++ {
+	for i := range players {
 		fmt.Printf("%s's turn, buy in: %d\n", players[i].Name, players[i].BuyIn)
 		// Check for Blackjack
 		if players[i].Hand.Sum == 21 {
@@ -99,7 +99,7 @@ func play(deck *models.Deck, numPlayers int, players []models.Player, output *se
 	takeAction("Dealer", &dealerHand, deck, output)
 	fmt.Println("---------------------------------")
 
-	for i := 0; i < numPlayers; i++ {
+	for i := range players {
 		switch models.GetWinner(players[i].Hand, dealerHand) {
 		case 2:
 			fmt.Printf("%s had Blackjack, gets 3x bet\n", players[i].Name)
@@ -113,7 +113,6 @@ func play(deck *models.Deck, numPlayers int, players []models.Player, output *se
 			players[i].Lose()
 		case 0:
 			fmt.Println("Draw")
-			// No change in money
 		}
 	}
 
@@ -127,31 +126,22 @@ func main() {
 	go output.Serve()
 	output.WaitForPlayers()
 
-	fmt.Println("Getting a fresh deck of cards")
-	deck := models.Deck{}
-	deck.BuildDeck(6)
-
-	fmt.Println("Shuffling cards...")
-	models.ShuffleDeck(deck)
-	// models.ShanoShuffleDeck(&deck) // TODO remove
-
-	numRounds := 100
-	numPlayers := 6
+	fmt.Println("Getting a fresh deck of cards and shuffling")
+	deck := models.GetNewDeck(6)
 
 	var players []models.Player
-	for i := 0; i < numPlayers; i++ {
+	for i := 0; i < settings.RoomSize; i++ {
 		players = append(players, models.Player{
 			Name:       "Player " + strconv.Itoa(i+1),
-			BuyIn:      100,
-			CurrentBet: 1,
+			BuyIn:      settings.InitialBuyIn,
+			CurrentBet: settings.CurrBet,
 		})
 	}
 
 	fmt.Println("Lets play!")
-	for round := 0; round < numRounds; round++ {
+	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		fmt.Printf("----------Round %d----------\n", round+1)
-		play(&deck, numPlayers, players, &output)
-		// TODO reshuffle when deck is low
+		play(&deck, players, &output)
 		deck = *models.ShuffleDeckIfLow(&deck, 150)
 	}
 
