@@ -30,52 +30,71 @@ func SendData(conn net.Conn, msg string) {
 	}
 }
 
-type Server struct {
-	connections        []net.Conn
-	newConnectionMutex sync.Mutex
-	someCond           sync.Cond
-	currentPlayer      int
+type Room struct {
+	connections   []net.Conn
+	currentPlayer int
+	isFullCond    sync.Cond
+	mutex         sync.Mutex
 }
 
-func (server *Server) GetCurrPlayerConn() *net.Conn {
-	currPlayerConn := server.connections[server.currentPlayer]
-	return &currPlayerConn
+func makeRoom() Room {
+	room := Room{}
+	room.isFullCond = *sync.NewCond(&room.mutex)
+	return room // TODO could copy lock
 }
 
-func (server *Server) ChangePlayer() {
-	server.currentPlayer += 1
-	server.currentPlayer %= len(server.connections)
+func (room *Room) GetCurrPlayerConn() *net.Conn {
+	return &room.connections[room.currentPlayer]
 }
 
-func (server *Server) SendAll(msg string) {
-	for _, conn := range server.connections {
+func (room *Room) ChangePlayer() {
+	room.currentPlayer += 1
+	room.currentPlayer %= len(room.connections)
+}
+
+func (room *Room) SendAll(msg string) {
+	for _, conn := range room.connections {
 		SendData(conn, msg)
 	}
 }
 
+func (room *Room) WaitForPlayers() {
+	fmt.Println("Waiting for players")
+	room.isFullCond.L.Lock()
+	for len(room.connections) != settings.RoomSize {
+		room.isFullCond.Wait()
+	}
+	room.isFullCond.L.Unlock()
+	fmt.Println("Wait is over!")
+}
+
+type Server struct {
+	newConnectionMutex sync.Mutex
+	rooms              []Room
+}
+
 func (server *Server) registerPlayer(conn *net.Conn) {
 	server.newConnectionMutex.Lock()
-	server.connections = append(server.connections, *conn)
-	if len(server.connections) == settings.RoomSize {
-		server.someCond.Broadcast()
+	lastRoomIdx := len(server.rooms) - 1
+	currRoom := &server.rooms[lastRoomIdx]
+	currRoom.connections = append(currRoom.connections, *conn)
+	fmt.Println(len(currRoom.connections))
+	if len(currRoom.connections) == settings.RoomSize {
+		server.rooms = append(server.rooms, makeRoom())
+		fmt.Println("Broadcasting")
+		currRoom.isFullCond.Broadcast()
 	}
 	server.newConnectionMutex.Unlock()
 }
 
-func (server *Server) WaitForPlayers() {
-	fmt.Println("Waiting for players")
-	server.someCond.L.Lock()
-	for len(server.connections) != settings.RoomSize {
-		server.someCond.Wait()
-	}
-	server.someCond.L.Unlock()
-	fmt.Println("Wait is over!")
+func MakeServer() Server {
+	server := Server{}
+	server.rooms = append(server.rooms, makeRoom())
+	return server // TODO: fix this copy of lock
 }
 
-func NewServer() Server {
-	server := Server{}
-	server.someCond = *sync.NewCond(&server.newConnectionMutex)
-	return server // TODO: fix this copy of lock
+func (server *Server) GetLastRoom() *Room {
+	return &server.rooms[len(server.rooms)-1]
 }
 
 func (server *Server) Serve() {

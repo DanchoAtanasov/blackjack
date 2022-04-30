@@ -10,15 +10,15 @@ import (
 	"blackjack/server"
 )
 
-func sendPlayerCount(count int, output *server.Server) {
-	server.SendData(*output.GetCurrPlayerConn(), strconv.Itoa(count))
+func sendPlayerCount(count int, room *server.Room) {
+	server.SendData(*room.GetCurrPlayerConn(), strconv.Itoa(count))
 }
 
-func readPlayerAction(output *server.Server) string {
+func readPlayerAction(room *server.Room) string {
 	fmt.Println("Hit(H) or Stand(S)")
 	var input string
 	for {
-		input = server.ReadData(*output.GetCurrPlayerConn())
+		input = server.ReadData(*room.GetCurrPlayerConn())
 		if input == "H" || input == "S" {
 			break
 		}
@@ -27,7 +27,7 @@ func readPlayerAction(output *server.Server) string {
 	return input
 }
 
-func takeAction(playerName string, hand *models.Hand, deck *models.Deck, output *server.Server) {
+func takeAction(playerName string, hand *models.Hand, deck *models.Deck, room *server.Room) {
 	for {
 		fmt.Printf("%s's hand is %v\n", playerName, hand.Cards)
 		fmt.Printf("Current count: %d\n", hand.Sum)
@@ -44,8 +44,8 @@ func takeAction(playerName string, hand *models.Hand, deck *models.Deck, output 
 				break
 			}
 		} else {
-			sendPlayerCount(hand.Sum, output)
-			input := readPlayerAction(output)
+			sendPlayerCount(hand.Sum, room)
+			input := readPlayerAction(room)
 			if input == "S" {
 				break
 			}
@@ -54,7 +54,7 @@ func takeAction(playerName string, hand *models.Hand, deck *models.Deck, output 
 		hand.AddCard(deck.DealCard())
 	}
 	if playerName != "Dealer" {
-		output.ChangePlayer()
+		room.ChangePlayer()
 	}
 }
 
@@ -64,7 +64,7 @@ func clearHands(players []models.Player) {
 	}
 }
 
-func play(deck *models.Deck, players []models.Player, output *server.Server) {
+func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	dealerHand := models.Hand{}
 
 	fmt.Println("Dealing")
@@ -77,7 +77,7 @@ func play(deck *models.Deck, players []models.Player, output *server.Server) {
 	}
 
 	fmt.Printf("Dealer's hand: %v\n", dealerHand.Cards)
-	output.SendAll(dealerHand.ToJson())
+	room.SendAll(dealerHand.ToJson())
 
 	// Players' turn
 	for i := range players {
@@ -91,12 +91,12 @@ func play(deck *models.Deck, players []models.Player, output *server.Server) {
 			continue
 		}
 
-		takeAction(players[i].Name, &players[i].Hand, deck, output)
+		takeAction(players[i].Name, &players[i].Hand, deck, room)
 		fmt.Println("---------------------------------")
 	}
 
 	// Dealer's turn
-	takeAction("Dealer", &dealerHand, deck, output)
+	takeAction("Dealer", &dealerHand, deck, room)
 	fmt.Println("---------------------------------")
 
 	for i := range players {
@@ -119,13 +119,7 @@ func play(deck *models.Deck, players []models.Player, output *server.Server) {
 	clearHands(players)
 }
 
-func main() {
-	fmt.Println("Welcome to Blackjack")
-	fmt.Println("Running server:")
-	output := server.NewServer()
-	go output.Serve()
-	output.WaitForPlayers()
-
+func playRoom(room *server.Room) {
 	fmt.Println("Getting a fresh deck of cards and shuffling")
 	deck := models.GetNewDeck(6)
 
@@ -141,7 +135,7 @@ func main() {
 	fmt.Println("Lets play!")
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		fmt.Printf("----------Round %d----------\n", round+1)
-		play(&deck, players, &output)
+		play(&deck, players, room)
 		deck = *models.ShuffleDeckIfLow(&deck, 150)
 	}
 
@@ -150,4 +144,43 @@ func main() {
 	for i := range players {
 		fmt.Printf("%s: %d\n", players[i].Name, players[i].BuyIn)
 	}
+	room.SendAll("Over")
+}
+
+func main() {
+	fmt.Println("Welcome to Blackjack")
+	fmt.Println("Running server:")
+	output := server.MakeServer()
+	go output.Serve()
+	for {
+		currRoom := output.GetLastRoom()
+		currRoom.WaitForPlayers()
+		go playRoom(currRoom)
+	}
+	// output.WaitForPlayers()
+
+	// fmt.Println("Getting a fresh deck of cards and shuffling")
+	// deck := models.GetNewDeck(6)
+
+	// var players []models.Player
+	// for i := 0; i < settings.RoomSize; i++ {
+	// 	players = append(players, models.Player{
+	// 		Name:       "Player " + strconv.Itoa(i+1),
+	// 		BuyIn:      settings.InitialBuyIn,
+	// 		CurrentBet: settings.CurrBet,
+	// 	})
+	// }
+
+	// fmt.Println("Lets play!")
+	// for round := 0; round < settings.NumRoundsPerGame; round++ {
+	// 	fmt.Printf("----------Round %d----------\n", round+1)
+	// 	play(&deck, players, &output)
+	// 	deck = *models.ShuffleDeckIfLow(&deck, 150)
+	// }
+
+	// fmt.Println("---------------------------------")
+	// fmt.Println("Final buy ins: ")
+	// for i := range players {
+	// 	fmt.Printf("%s: %d\n", players[i].Name, players[i].BuyIn)
+	// }
 }
