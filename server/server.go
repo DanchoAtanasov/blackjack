@@ -78,7 +78,6 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	lastRoomIdx := len(server.rooms) - 1
 	currRoom := &server.rooms[lastRoomIdx]
 	currRoom.connections = append(currRoom.connections, *conn)
-	fmt.Println(len(currRoom.connections))
 	if len(currRoom.connections) == settings.RoomSize {
 		server.rooms = append(server.rooms, makeRoom())
 		fmt.Println("Broadcasting")

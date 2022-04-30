@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	// "blackjack/ui"
 	settings "blackjack/configs"
 	"blackjack/models"
 	"blackjack/server"
@@ -157,30 +156,4 @@ func main() {
 		currRoom.WaitForPlayers()
 		go playRoom(currRoom)
 	}
-	// output.WaitForPlayers()
-
-	// fmt.Println("Getting a fresh deck of cards and shuffling")
-	// deck := models.GetNewDeck(6)
-
-	// var players []models.Player
-	// for i := 0; i < settings.RoomSize; i++ {
-	// 	players = append(players, models.Player{
-	// 		Name:       "Player " + strconv.Itoa(i+1),
-	// 		BuyIn:      settings.InitialBuyIn,
-	// 		CurrentBet: settings.CurrBet,
-	// 	})
-	// }
-
-	// fmt.Println("Lets play!")
-	// for round := 0; round < settings.NumRoundsPerGame; round++ {
-	// 	fmt.Printf("----------Round %d----------\n", round+1)
-	// 	play(&deck, players, &output)
-	// 	deck = *models.ShuffleDeckIfLow(&deck, 150)
-	// }
-
-	// fmt.Println("---------------------------------")
-	// fmt.Println("Final buy ins: ")
-	// for i := range players {
-	// 	fmt.Printf("%s: %d\n", players[i].Name, players[i].BuyIn)
-	// }
 }
