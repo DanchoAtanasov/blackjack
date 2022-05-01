@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strconv"
+
+	"github.com/google/uuid"
 
 	settings "blackjack/configs"
 	"blackjack/models"
@@ -24,6 +27,20 @@ func readPlayerAction(room *server.Room) string {
 		fmt.Println("Try again")
 	}
 	return input
+}
+
+func saveResultToFile(players []models.Player) {
+	var outputString string
+	for i := range players {
+		outputString += fmt.Sprintf("%s: %d\n", players[i].Name, players[i].BuyIn)
+	}
+	filename := uuid.New()
+	err := os.WriteFile("./results/"+filename.String(), []byte(outputString), 0666)
+	if err != nil {
+		fmt.Println(err)
+		// TODO catch error
+	}
+	fmt.Println("Results saved to file: ", filename.String())
 }
 
 func takeAction(playerName string, hand *models.Hand, deck *models.Deck, room *server.Room) {
@@ -143,6 +160,7 @@ func playRoom(room *server.Room) {
 	for i := range players {
 		fmt.Printf("%s: %d\n", players[i].Name, players[i].BuyIn)
 	}
+	go saveResultToFile(players)
 	room.SendAll("Over")
 }
 
