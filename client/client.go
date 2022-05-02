@@ -33,7 +33,8 @@ func readData(conn net.Conn) string {
 }
 
 func play(i int, wg *sync.WaitGroup) {
-	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), "ws://127.0.0.1:8080/")
+	// TODO add env variable for host
+	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), "ws://app:8080/")
 	defer wg.Done()
 	if err != nil {
 		fmt.Printf("%d can not connect: %v\n", i, err)

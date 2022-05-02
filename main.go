@@ -35,7 +35,8 @@ func saveResultToFile(players []models.Player) {
 		outputString += fmt.Sprintf("%s: %d\n", players[i].Name, players[i].BuyIn)
 	}
 	filename := uuid.New()
-	err := os.WriteFile("./results/"+filename.String(), []byte(outputString), 0666)
+	// TODO fix path for docker
+	err := os.WriteFile(fmt.Sprintf("./%s.log", filename.String()), []byte(outputString), 0666)
 	if err != nil {
 		fmt.Println(err)
 		// TODO catch error

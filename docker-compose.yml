@@ -2,8 +2,14 @@ services:
   app:
     build: .
     container_name: blackjack
-    # ports:
-    #   - "8000:5000"
-    # volumes:
-    #   - .:/code
-    #   - logvolume01:/var/log
+    ports:
+      - "8080:8080"
+    # TODO add volume
+
+  client:
+    build: client/
+    container_name: blackjack_client
+    links:
+      - "app:app"
+    depends_on:
+      - app
