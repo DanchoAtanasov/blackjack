@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/gobwas/ws"
@@ -98,10 +97,9 @@ func (server *Server) GetLastRoom() *Room {
 
 func (server *Server) Serve() {
 	port := 8080
-	port_str := ":" + strconv.Itoa(port)
 	fmt.Println("Serving on port", port)
 
-	http.ListenAndServe(port_str, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.ListenAndServe(fmt.Sprintf(":%d", port), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
 			// handle error

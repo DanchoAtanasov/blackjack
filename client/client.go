@@ -4,12 +4,22 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+var hostName string = getEnv("BJ_HOST", "localhost")
 
 func sendData(conn net.Conn, msg string) string {
 	err := wsutil.WriteClientMessage(conn, ws.OpText, []byte(msg))
@@ -34,7 +44,7 @@ func readData(conn net.Conn) string {
 
 func play(i int, wg *sync.WaitGroup) {
 	// TODO add env variable for host
-	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), "ws://app:8080/")
+	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), fmt.Sprintf("ws://%s:8080/", hostName))
 	defer wg.Done()
 	if err != nil {
 		fmt.Printf("%d can not connect: %v\n", i, err)

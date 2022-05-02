@@ -13,3 +13,5 @@ services:
       - "app:app"
     depends_on:
       - app
+    environment:
+      - BJ_HOST=app
