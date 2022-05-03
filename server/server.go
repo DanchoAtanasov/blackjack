@@ -99,13 +99,14 @@ func (server *Server) Serve() {
 	port := 8080
 	fmt.Println("Serving on port", port)
 
-	http.ListenAndServe(fmt.Sprintf(":%d", port), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, _, _, err := ws.UpgradeHTTP(r, w)
-		if err != nil {
-			// handle error
-		}
+	http.ListenAndServe(fmt.Sprintf(":%d", port),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			conn, _, _, err := ws.UpgradeHTTP(r, w)
+			if err != nil {
+				// handle error
+			}
 
-		fmt.Println("New player connected")
-		go server.registerPlayer(&conn)
-	}))
+			fmt.Println("New player connected")
+			go server.registerPlayer(&conn)
+		}))
 }
