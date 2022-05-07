@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -59,8 +58,7 @@ func ShuffleDeckIfLow(deck *Deck, threshold int) *Deck {
 	if len(deck.cards) > threshold {
 		return deck
 	}
-	fmt.Println("Deck is below threshold, shuffling...")
-	newDeck := GetNewDeck(6)
+	newDeck := GetNewShuffledDeck(6)
 	return &newDeck
 }
 
