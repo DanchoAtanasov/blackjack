@@ -137,8 +137,8 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 }
 
 func playRoom(room *server.Room) {
-	fmt.Println("Getting a fresh deck of cards and shuffling")
-	deck := models.GetNewDeck(settings.NumDecksInShoe)
+	fmt.Println("Getting a new shuffled deck of cards")
+	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe)
 
 	var players []models.Player
 	for i := 0; i < settings.RoomSize; i++ {

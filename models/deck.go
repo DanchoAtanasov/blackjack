@@ -30,16 +30,21 @@ type Deck struct {
 	cards []Card
 }
 
-func GetNewDeck(deckSize int) Deck {
+func GetNewDeck(size int) Deck {
 	deck := Deck{}
-	deck.cards = make([]Card, 0, deckSize)
-	for i := 0; i < deckSize; i++ {
+	deck.cards = make([]Card, 0, size)
+	for i := 0; i < size; i++ {
 		for _, suit := range suites {
 			for _, val := range cardValues {
 				deck.cards = append(deck.cards, Card{val, suit, cardValuesMap[val]})
 			}
 		}
 	}
+	return deck
+}
+
+func GetNewShuffledDeck(size int) Deck {
+	deck := GetNewDeck(size)
 	ShuffleDeck(deck)
 	return deck
 }
