@@ -8,7 +8,7 @@ dev:
 	go run main.go
 
 test:
-	go test -v blackjack/models
+	go test -v ./...
 
 coverage:
-	go test --cover blackjack/models
+	go test --cover ./...
