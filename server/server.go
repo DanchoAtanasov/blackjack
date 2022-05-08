@@ -36,10 +36,10 @@ type Room struct {
 	mutex         sync.Mutex
 }
 
-func makeRoom() Room {
+func makeRoom() *Room {
 	room := Room{}
 	room.isFullCond = *sync.NewCond(&room.mutex)
-	return room // TODO could copy lock
+	return &room // TODO could copy lock
 }
 
 func (room *Room) GetCurrPlayerConn() *net.Conn {
@@ -78,17 +78,16 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	currRoom := &server.rooms[lastRoomIdx]
 	currRoom.connections = append(currRoom.connections, *conn)
 	if len(currRoom.connections) == settings.RoomSize {
-		server.rooms = append(server.rooms, makeRoom())
-		fmt.Println("Broadcasting")
+		server.rooms = append(server.rooms, *makeRoom())
 		currRoom.isFullCond.Broadcast()
 	}
 	server.newConnectionMutex.Unlock()
 }
 
-func MakeServer() Server {
+func MakeServer() *Server {
 	server := Server{}
-	server.rooms = append(server.rooms, makeRoom())
-	return server // TODO: fix this copy of lock
+	server.rooms = append(server.rooms, *makeRoom())
+	return &server // TODO: fix this copy of lock
 }
 
 func (server *Server) GetLastRoom() *Room {
