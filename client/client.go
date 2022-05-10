@@ -98,7 +98,7 @@ func play(i int, wg *sync.WaitGroup) {
 
 func main() {
 	var wg sync.WaitGroup
-	numPlayers := 18
+	numPlayers := 24
 	for i := 0; i < numPlayers; i++ {
 		wg.Add(1)
 		go play(i, &wg)

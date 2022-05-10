@@ -1,17 +1,24 @@
+version: "3.9"
+
 services:
   app:
+    image: 127.0.0.1:5000/blackjack
     build: .
     container_name: blackjack
     ports:
       - "8080:8080"
+    deploy:
+      mode: replicated
+      replicas: 2
     # TODO add volume
 
-  client:
-    build: client/
-    container_name: blackjack_client
-    links:
-      - "app:app"
-    depends_on:
-      - app
-    environment:
-      - BJ_HOST=app
+  # client:
+  #   image: 127.0.0.1:5000/client
+  #   build: client/
+  #   container_name: blackjack_client
+  #   links:
+  #     - "app:app"
+  #   depends_on:
+  #     - app
+  #   environment:
+  #     - BJ_HOST=app
