@@ -21,25 +21,25 @@ func getEnv(key, fallback string) string {
 
 var hostName string = getEnv("BJ_HOST", "localhost")
 
-func sendData(conn net.Conn, msg string) string {
+func sendData(conn net.Conn, msg string) (string, error) {
 	err := wsutil.WriteClientMessage(conn, ws.OpText, []byte(msg))
 	if err != nil {
 		fmt.Printf("Send failed")
-		return "Failed"
+		return "", err
 	}
 	fmt.Println("Sent ", msg)
-	return "OK"
+	return "OK", err
 }
 
-func readData(conn net.Conn) string {
+func readData(conn net.Conn) (string, error) {
 	msg_bytes, _, err := wsutil.ReadServerData(conn)
 	if err != nil {
 		fmt.Println("Receive failed")
-		return "Failed"
+		return "", err
 	}
 	msg := string(msg_bytes)
 	fmt.Println("Received ", msg)
-	return msg
+	return msg, err
 }
 
 func play(i int, wg *sync.WaitGroup) {
@@ -50,41 +50,61 @@ func play(i int, wg *sync.WaitGroup) {
 		fmt.Printf("%d can not connect: %v\n", i, err)
 		return
 	}
+	defer conn.Close()
 
 	fmt.Printf("%d connected\n", i)
 	fmt.Println("Waiting for game to begin")
 
-	dealerHand := readData(conn)
-	fmt.Println(dealerHand)
-
+	// Round loop
 	for {
-		currentCountString := readData(conn)
-		if currentCountString == "Failed" {
-			break
-		}
-		if currentCountString == "Over" {
+		dealerHand, _ := readData(conn)
+		fmt.Printf("[%d] Dealer's hand: %s\n", i, dealerHand)
+		if dealerHand == "Over" {
 			fmt.Println("Game is over, ending")
 			break
 		}
 
-		currentCount, err := strconv.Atoi(currentCountString)
-		if err != nil {
-			// TODO fix this, dealer hand is coming here, for now read another message
-			currentCountString = readData(conn)
-			currentCount, _ = strconv.Atoi(currentCountString)
-		}
+		for {
+			currentCountString, err := readData(conn)
+			if err != nil {
+				break
+			}
 
-		fmt.Println("Current hand: ", currentCount)
-		var action string
-		if currentCount < 16 {
-			action = "H"
-		} else {
-			action = "S"
-		}
+			if currentCountString == "Blackjack" {
+				fmt.Printf("[%d] got Blackjack!\n", i)
+				break
+			}
 
-		res := sendData(conn, action)
-		if res == "Failed" {
-			break
+			if currentCountString == "Bust" {
+				fmt.Printf("[%d] Bust\n", i)
+				break
+			}
+
+			currentCount, err := strconv.Atoi(currentCountString)
+			if err != nil {
+				fmt.Printf("[%d] Error converting count. %v\n", i, err)
+				break
+				// TODO fix this, dealer hand is coming here, for now read another message
+				// currentCountString, _ = readData(conn)
+				// currentCount, _ = strconv.Atoi(currentCountString)
+			}
+
+			fmt.Printf("[%d]Current hand: %d\n", i, currentCount)
+			var action string
+			if currentCount < 16 {
+				action = "H"
+			} else {
+				action = "S"
+			}
+
+			_, err = sendData(conn, action)
+			if err != nil {
+				break
+			}
+
+			if action == "S" {
+				break
+			}
 		}
 	}
 

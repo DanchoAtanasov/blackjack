@@ -16,6 +16,14 @@ func sendPlayerCount(count int, room *server.Room) {
 	server.SendData(*room.GetCurrPlayerConn(), strconv.Itoa(count))
 }
 
+func sendBust(room *server.Room) {
+	server.SendData(*room.GetCurrPlayerConn(), "Bust")
+}
+
+func sendBlackjack(room *server.Room) {
+	server.SendData(*room.GetCurrPlayerConn(), "Blackjack")
+}
+
 func readPlayerAction(room *server.Room) string {
 	fmt.Println("Hit(H) or Stand(S)")
 	var input string
@@ -51,6 +59,9 @@ func takeAction(playerName string, hand *models.Hand, deck *models.Deck, room *s
 
 		if hand.IsBust() {
 			fmt.Println("Over 21, bust")
+			if playerName != "Dealer" {
+				sendBust(room)
+			}
 			break
 		}
 
@@ -103,6 +114,8 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 		if players[i].Hand.Sum == 21 {
 			fmt.Printf("Hand is %v\n", players[i].Hand.Cards)
 			fmt.Println("Blackjack!")
+			sendBlackjack(room)
+			room.ChangePlayer()
 			players[i].Hand.IsBlackjack = true
 			fmt.Println("---------------------------------")
 			continue
