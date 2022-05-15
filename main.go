@@ -14,8 +14,10 @@ import (
 )
 
 const (
-	STAND string = "S"
-	HIT   string = "H"
+	STAND         string = "S"
+	HIT           string = "H"
+	BUST_MSG      string = "Bust"
+	BLACKJACK_MSG string = "Blackjack"
 )
 const DIVIDER string = "---------------------------------"
 
@@ -59,8 +61,8 @@ func saveResultToFile(players []models.Player) {
 		outputString += fmt.Sprintf("%s: %d\n", players[i].Name, players[i].BuyIn)
 	}
 	filename := uuid.New()
-	// TODO fix path for docker
-	err := os.WriteFile(fmt.Sprintf("./%s.log", filename.String()), []byte(outputString), 0666)
+	os.Mkdir("logs", 0755)
+	err := os.WriteFile(fmt.Sprintf("./logs/%s.log", filename.String()), []byte(outputString), 0666)
 	if err != nil {
 		fmt.Println(err)
 		// TODO catch error
@@ -81,7 +83,7 @@ func playTurn(
 
 		if player.Hand.IsBust() {
 			fmt.Println("Over 21, bust")
-			sendAction(conn, "Bust")
+			sendAction(conn, BUST_MSG)
 			break
 		}
 
@@ -130,7 +132,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 		if currPlayer.Hand.IsBlackjack {
 			fmt.Printf("Hand is %v\n", currPlayer.Hand.Cards)
 			fmt.Println("Blackjack!")
-			sendPlayer(currConn, "Blackjack")
+			sendPlayer(currConn, BLACKJACK_MSG)
 		} else {
 			playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer)
 		}
