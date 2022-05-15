@@ -13,6 +13,12 @@ import (
 	"blackjack/server"
 )
 
+const (
+	STAND string = "S"
+	HIT   string = "H"
+)
+const DIVIDER string = "---------------------------------"
+
 type senderFunc func(net.Conn, string)
 type readerFunc func(net.Conn, models.Hand) string
 
@@ -25,26 +31,26 @@ func sendDealer(conn net.Conn, message string) {
 }
 
 func readPlayerAction(conn net.Conn, hand models.Hand) string {
-	fmt.Println("Hit(H) or Stand(S)")
+	fmt.Printf("Hit(%s) or Stand(%s)\n", HIT, STAND)
 	var input string
 	for {
 		input = server.ReadData(conn)
-		if input == "H" || input == "S" {
+		if input == HIT || input == STAND {
 			break
 		}
-		fmt.Println("Try again") // TODO fix this loop
+		fmt.Printf("Wrong input %s, Try again\n", input)
 	}
 	return input
 }
 
 func readDealerAction(conn net.Conn, hand models.Hand) string {
 	if hand.Sum > 17 {
-		return "S"
+		return STAND
 	}
 	if hand.Sum == 17 && hand.NumAces <= 0 {
-		return "S"
+		return STAND
 	}
-	return "H"
+	return HIT
 }
 
 func saveResultToFile(players []models.Player) {
@@ -84,7 +90,7 @@ func playTurn(
 
 		// Read action
 		input := readAction(conn, player.Hand)
-		if input == "S" {
+		if input == STAND {
 			break
 		}
 
@@ -130,12 +136,12 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 		}
 
 		room.ChangePlayer()
-		fmt.Println("---------------------------------")
+		fmt.Println(DIVIDER)
 	}
 
 	// Dealer's turn
 	playTurn(dealer, deck, currConn, readDealerAction, sendDealer)
-	fmt.Println("---------------------------------")
+	fmt.Println(DIVIDER)
 
 	for i := range players {
 		currPlayer := &players[i]
@@ -178,7 +184,7 @@ func playRoom(room *server.Room) {
 		deck = *models.ShuffleDeckIfLow(&deck, 150)
 	}
 
-	fmt.Println("---------------------------------")
+	fmt.Println(DIVIDER)
 	fmt.Println("Final buy ins: ")
 	for i := range players {
 		fmt.Printf("%s: %d\n", players[i].Name, players[i].BuyIn)
