@@ -13,7 +13,7 @@ type handInterface interface {
 type Hand struct {
 	Cards       []Card
 	Sum         int
-	NumAces     int
+	NumAces     int // is used to implement soft count
 	IsBlackjack bool
 }
 
@@ -23,10 +23,14 @@ func (hand *Hand) AddCard(card Card) {
 	}
 	hand.Cards = append(hand.Cards, card)
 	hand.increaseSum(card.value)
+	if hand.Sum == 21 && len(hand.Cards) == 2 {
+		hand.IsBlackjack = true
+	}
 }
 
 func (hand *Hand) increaseSum(value int) {
 	hand.Sum += value
+	// convert soft count to hard count
 	if hand.Sum > 21 && hand.NumAces > 0 {
 		hand.Sum -= 10
 		hand.NumAces -= 1

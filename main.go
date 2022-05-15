@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 
@@ -12,29 +13,38 @@ import (
 	"blackjack/server"
 )
 
-func sendPlayerCount(count int, room *server.Room) {
-	server.SendData(*room.GetCurrPlayerConn(), strconv.Itoa(count))
+type senderFunc func(net.Conn, string)
+type readerFunc func(net.Conn, models.Hand) string
+
+func sendPlayer(conn net.Conn, message string) {
+	server.SendData(conn, message)
 }
 
-func sendBust(room *server.Room) {
-	server.SendData(*room.GetCurrPlayerConn(), "Bust")
+func sendDealer(conn net.Conn, message string) {
+	// Do nothing, the dealer is in this server
 }
 
-func sendBlackjack(room *server.Room) {
-	server.SendData(*room.GetCurrPlayerConn(), "Blackjack")
-}
-
-func readPlayerAction(room *server.Room) string {
+func readPlayerAction(conn net.Conn, hand models.Hand) string {
 	fmt.Println("Hit(H) or Stand(S)")
 	var input string
 	for {
-		input = server.ReadData(*room.GetCurrPlayerConn())
+		input = server.ReadData(conn)
 		if input == "H" || input == "S" {
 			break
 		}
-		fmt.Println("Try again")
+		fmt.Println("Try again") // TODO fix this loop
 	}
 	return input
+}
+
+func readDealerAction(conn net.Conn, hand models.Hand) string {
+	if hand.Sum > 17 {
+		return "S"
+	}
+	if hand.Sum == 17 && hand.NumAces <= 0 {
+		return "S"
+	}
+	return "H"
 }
 
 func saveResultToFile(players []models.Player) {
@@ -52,37 +62,33 @@ func saveResultToFile(players []models.Player) {
 	fmt.Println("Results saved to file: ", filename.String())
 }
 
-func takeAction(playerName string, hand *models.Hand, deck *models.Deck, room *server.Room) {
+func playTurn(
+	player *models.Player,
+	deck *models.Deck,
+	conn net.Conn,
+	readAction readerFunc,
+	sendAction senderFunc,
+) {
 	for {
-		fmt.Printf("%s's hand is %v\n", playerName, hand.Cards)
-		fmt.Printf("Current count: %d\n", hand.Sum)
+		fmt.Printf("%s's hand is %v\n", player.Name, player.Hand.Cards)
+		fmt.Printf("Current count: %d\n", player.Hand.Sum)
 
-		if hand.IsBust() {
+		if player.Hand.IsBust() {
 			fmt.Println("Over 21, bust")
-			if playerName != "Dealer" {
-				sendBust(room)
-			}
+			sendAction(conn, "Bust")
 			break
 		}
 
-		if playerName == "Dealer" {
-			if hand.Sum > 17 {
-				break
-			} else if hand.Sum == 17 && hand.NumAces <= 0 {
-				break
-			}
-		} else {
-			sendPlayerCount(hand.Sum, room)
-			input := readPlayerAction(room)
-			if input == "S" {
-				break
-			}
+		// Send current count
+		sendAction(conn, strconv.Itoa(player.Hand.Sum))
+
+		// Read action
+		input := readAction(conn, player.Hand)
+		if input == "S" {
+			break
 		}
 
-		hand.AddCard(deck.DealCard())
-	}
-	if playerName != "Dealer" {
-		room.ChangePlayer()
+		player.Hand.AddCard(deck.DealCard())
 	}
 }
 
@@ -93,54 +99,57 @@ func clearHands(players []models.Player) {
 }
 
 func play(deck *models.Deck, players []models.Player, room *server.Room) {
-	dealerHand := models.Hand{}
+	dealer := &models.Player{Name: "Dealer"}
 
 	fmt.Println("Dealing")
 	for i := range players {
 		players[i].Hand.AddCard(deck.DealCard())
 	}
-	dealerHand.AddCard(deck.DealCard())
+	dealer.Hand.AddCard(deck.DealCard())
 	for i := range players {
 		players[i].Hand.AddCard(deck.DealCard())
 	}
 
-	fmt.Printf("Dealer's hand: %v\n", dealerHand.Cards)
-	room.SendAll(dealerHand.ToJson())
+	fmt.Printf("Dealer's hand: %v\n", dealer.Hand.Cards)
+	room.SendAll(dealer.Hand.ToJson())
 
+	currConn := *room.GetCurrPlayerConn()
 	// Players' turn
 	for i := range players {
-		fmt.Printf("%s's turn, buy in: %d\n", players[i].Name, players[i].BuyIn)
+		currPlayer := &players[i]
+		fmt.Printf("%s's turn, buy in: %d\n", currPlayer.Name, currPlayer.BuyIn)
+		currConn = *room.GetCurrPlayerConn()
+
 		// Check for Blackjack
-		if players[i].Hand.Sum == 21 {
-			fmt.Printf("Hand is %v\n", players[i].Hand.Cards)
+		if currPlayer.Hand.IsBlackjack {
+			fmt.Printf("Hand is %v\n", currPlayer.Hand.Cards)
 			fmt.Println("Blackjack!")
-			sendBlackjack(room)
-			room.ChangePlayer()
-			players[i].Hand.IsBlackjack = true
-			fmt.Println("---------------------------------")
-			continue
+			sendPlayer(currConn, "Blackjack")
+		} else {
+			playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer)
 		}
 
-		takeAction(players[i].Name, &players[i].Hand, deck, room)
+		room.ChangePlayer()
 		fmt.Println("---------------------------------")
 	}
 
 	// Dealer's turn
-	takeAction("Dealer", &dealerHand, deck, room)
+	playTurn(dealer, deck, currConn, readDealerAction, sendDealer)
 	fmt.Println("---------------------------------")
 
 	for i := range players {
-		switch models.GetWinner(players[i].Hand, dealerHand) {
+		currPlayer := &players[i]
+		switch models.GetWinner(currPlayer.Hand, dealer.Hand) {
 		case 2:
-			fmt.Printf("%s had Blackjack, gets 3x bet\n", players[i].Name)
-			players[i].Win()
-			players[i].Win()
+			fmt.Printf("%s had Blackjack, gets 3x bet\n", currPlayer.Name)
+			currPlayer.Win()
+			currPlayer.Win()
 		case 1:
-			fmt.Printf("%s wins!\n", players[i].Name)
-			players[i].Win()
+			fmt.Printf("%s wins!\n", currPlayer.Name)
+			currPlayer.Win()
 		case -1:
 			fmt.Println("Dealer wins. :(")
-			players[i].Lose()
+			currPlayer.Lose()
 		case 0:
 			fmt.Println("Draw")
 		}

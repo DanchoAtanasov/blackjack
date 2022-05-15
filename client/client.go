@@ -27,7 +27,7 @@ func sendData(conn net.Conn, msg string) (string, error) {
 		fmt.Printf("Send failed")
 		return "", err
 	}
-	fmt.Println("Sent ", msg)
+	// fmt.Println("Sent ", msg)
 	return "OK", err
 }
 
@@ -38,7 +38,7 @@ func readData(conn net.Conn) (string, error) {
 		return "", err
 	}
 	msg := string(msg_bytes)
-	fmt.Println("Received ", msg)
+	// fmt.Println("Received ", msg)
 	return msg, err
 }
 
@@ -118,7 +118,7 @@ func play(i int, wg *sync.WaitGroup) {
 
 func main() {
 	var wg sync.WaitGroup
-	numPlayers := 24
+	numPlayers := 42
 	for i := 0; i < numPlayers; i++ {
 		wg.Add(1)
 		go play(i, &wg)
