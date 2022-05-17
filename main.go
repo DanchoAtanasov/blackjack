@@ -18,6 +18,8 @@ const (
 	HIT           string = "H"
 	BUST_MSG      string = "Bust"
 	BLACKJACK_MSG string = "Blackjack"
+	OVER_MSG      string = "Over"
+	START_MSG     string = "Start"
 )
 const DIVIDER string = "---------------------------------"
 
@@ -166,7 +168,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	clearHands(players)
 }
 
-func playRoom(room *server.Room) {
+func playRoom(room *server.Room, server *server.Server) {
 	fmt.Println("Getting a new shuffled deck of cards")
 	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe)
 
@@ -180,6 +182,8 @@ func playRoom(room *server.Room) {
 	}
 
 	fmt.Println("Lets play!")
+	room.SendAll(START_MSG)
+
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		fmt.Printf("----------Round %d----------\n", round+1)
 		play(&deck, players, room)
@@ -191,8 +195,9 @@ func playRoom(room *server.Room) {
 	for i := range players {
 		fmt.Printf("%s: %d\n", players[i].Name, players[i].BuyIn)
 	}
+
 	go saveResultToFile(players)
-	room.SendAll("Over")
+	room.SendAll(OVER_MSG)
 }
 
 func main() {
@@ -201,8 +206,8 @@ func main() {
 	output := server.MakeServer()
 	go output.Serve()
 	for {
-		currRoom := output.GetLastRoom()
+		currRoom := output.GetRoom()
 		currRoom.WaitForPlayers()
-		go playRoom(currRoom)
+		go playRoom(currRoom, output)
 	}
 }

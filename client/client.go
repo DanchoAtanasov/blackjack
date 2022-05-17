@@ -47,17 +47,28 @@ func play(i int, wg *sync.WaitGroup) {
 	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), fmt.Sprintf("ws://%s:8080/", hostName))
 	defer wg.Done()
 	if err != nil {
-		fmt.Printf("%d can not connect: %v\n", i, err)
+		fmt.Printf("[%d] can not connect: %v\n", i, err)
 		return
 	}
-	defer conn.Close()
+	// defer conn.Close()
 
-	fmt.Printf("%d connected\n", i)
+	fmt.Printf("[%d] connected\n", i)
 	fmt.Println("Waiting for game to begin")
+
+	startMsg, err := readData(conn)
+	if startMsg != "Start" {
+		fmt.Printf("[%d] Wrong start msg received: %s\n", i, startMsg)
+	}
+	fmt.Printf("[%d] Game started\n", i)
 
 	// Round loop
 	for {
-		dealerHand, _ := readData(conn)
+		dealerHand, err := readData(conn)
+		if err != nil {
+			fmt.Println("Reading dealer hand failed, exiting")
+			break
+		}
+
 		fmt.Printf("[%d] Dealer's hand: %s\n", i, dealerHand)
 		if dealerHand == "Over" {
 			fmt.Println("Game is over, ending")
@@ -84,9 +95,6 @@ func play(i int, wg *sync.WaitGroup) {
 			if err != nil {
 				fmt.Printf("[%d] Error converting count. %v\n", i, err)
 				break
-				// TODO fix this, dealer hand is coming here, for now read another message
-				// currentCountString, _ = readData(conn)
-				// currentCount, _ = strconv.Atoi(currentCountString)
 			}
 
 			fmt.Printf("[%d]Current hand: %d\n", i, currentCount)
@@ -110,15 +118,15 @@ func play(i int, wg *sync.WaitGroup) {
 
 	err = conn.Close()
 	if err != nil {
-		fmt.Printf("%d can not close: %v\n", i, err)
+		fmt.Printf("[%d] can not close: %v\n", i, err)
 	} else {
-		fmt.Printf("%d closed\n", i)
+		fmt.Printf("[%d] closed\n", i)
 	}
 }
 
 func main() {
 	var wg sync.WaitGroup
-	numPlayers := 42
+	numPlayers := 12
 	for i := 0; i < numPlayers; i++ {
 		wg.Add(1)
 		go play(i, &wg)

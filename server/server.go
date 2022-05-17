@@ -15,8 +15,9 @@ import (
 func ReadData(conn net.Conn) string {
 	msg, _, err := wsutil.ReadClientData(conn)
 	if err != nil {
-		// handle error
+		fmt.Println("Read failed, ", err)
 	}
+
 	msg_str := string(msg)
 	fmt.Println("Received: ", msg_str)
 	return msg_str
@@ -25,7 +26,7 @@ func ReadData(conn net.Conn) string {
 func SendData(conn net.Conn, msg string) {
 	err := wsutil.WriteServerMessage(conn, ws.OpText, []byte(msg))
 	if err != nil {
-		// handle error
+		fmt.Println("Send failed, ", err)
 	}
 }
 
@@ -36,10 +37,10 @@ type Room struct {
 	mutex         sync.Mutex
 }
 
-func makeRoom() *Room {
+func MakeRoom() *Room {
 	room := Room{}
 	room.isFullCond = *sync.NewCond(&room.mutex)
-	return &room // TODO could copy lock
+	return &room
 }
 
 func (room *Room) GetCurrPlayerConn() *net.Conn {
@@ -48,7 +49,7 @@ func (room *Room) GetCurrPlayerConn() *net.Conn {
 
 func (room *Room) ChangePlayer() {
 	room.currentPlayer += 1
-	room.currentPlayer %= len(room.connections)
+	room.currentPlayer %= len(room.connections) // TODO if player disconnects
 }
 
 func (room *Room) SendAll(msg string) {
@@ -63,35 +64,38 @@ func (room *Room) WaitForPlayers() {
 	for len(room.connections) != settings.RoomSize {
 		room.isFullCond.Wait()
 	}
+
 	room.isFullCond.L.Unlock()
 	fmt.Println("Wait is over!")
 }
 
 type Server struct {
 	newConnectionMutex sync.Mutex
-	rooms              []Room
+	room               *Room
 }
 
 func (server *Server) registerPlayer(conn *net.Conn) {
+	fmt.Println("Registering player")
 	server.newConnectionMutex.Lock()
-	lastRoomIdx := len(server.rooms) - 1
-	currRoom := &server.rooms[lastRoomIdx]
+	defer server.newConnectionMutex.Unlock()
+
+	currRoom := server.room
 	currRoom.connections = append(currRoom.connections, *conn)
+
 	if len(currRoom.connections) == settings.RoomSize {
-		server.rooms = append(server.rooms, *makeRoom())
 		currRoom.isFullCond.Broadcast()
+		server.room = MakeRoom()
 	}
-	server.newConnectionMutex.Unlock()
 }
 
 func MakeServer() *Server {
 	server := Server{}
-	server.rooms = append(server.rooms, *makeRoom())
-	return &server // TODO: fix this copy of lock
+	server.room = MakeRoom()
+	return &server
 }
 
-func (server *Server) GetLastRoom() *Room {
-	return &server.rooms[len(server.rooms)-1]
+func (server *Server) GetRoom() *Room {
+	return server.room
 }
 
 func (server *Server) Serve() {
