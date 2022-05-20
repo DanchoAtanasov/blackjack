@@ -2,12 +2,15 @@ package server
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/sirupsen/logrus"
 
 	settings "blackjack/configs"
 )
@@ -19,7 +22,7 @@ func ReadData(conn net.Conn) string {
 	}
 
 	msg_str := string(msg)
-	fmt.Println("Received: ", msg_str)
+	// fmt.Println("Received: ", msg_str)
 	return msg_str
 }
 
@@ -35,12 +38,30 @@ type Room struct {
 	currentPlayer int
 	isFullCond    sync.Cond
 	mutex         sync.Mutex
+	Log           *logrus.Logger
+	Id            string
 }
 
 func MakeRoom() *Room {
 	room := Room{}
 	room.isFullCond = *sync.NewCond(&room.mutex)
+	room.Id = uuid.New().String()
+	room.Log = MakeLog(room.Id)
+
 	return &room
+}
+
+func MakeLog(id string) *logrus.Logger {
+	filename := fmt.Sprintf("./logs/%s.log", id)
+	log := logrus.New()
+	log.Out = os.Stdout
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		log.Out = file
+	} else {
+		log.Info("Failed to log to file, using default stderr")
+	}
+	return log
 }
 
 func (room *Room) GetCurrPlayerConn() *net.Conn {
@@ -83,8 +104,8 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	currRoom.connections = append(currRoom.connections, *conn)
 
 	if len(currRoom.connections) == settings.RoomSize {
-		currRoom.isFullCond.Broadcast()
 		server.room = MakeRoom()
+		currRoom.isFullCond.Broadcast()
 	}
 }
 
