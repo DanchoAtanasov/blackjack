@@ -206,8 +206,7 @@ func main() {
 	output := server.MakeServer()
 	go output.Serve()
 	for {
-		currRoom := output.GetRoom()
-		currRoom.WaitForPlayers()
+		currRoom := output.WaitForPlayers()
 		go playRoom(currRoom, output)
 	}
 }
