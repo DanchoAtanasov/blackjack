@@ -16,7 +16,7 @@ import (
 )
 
 func ReadData(conn net.Conn) string {
-	msg, _, err := wsutil.ReadClientData(conn)
+	msg, err := wsutil.ReadClientText(conn)
 	if err != nil {
 		fmt.Println("Read failed, ", err)
 	}
@@ -27,7 +27,7 @@ func ReadData(conn net.Conn) string {
 }
 
 func SendData(conn net.Conn, msg string) {
-	err := wsutil.WriteServerMessage(conn, ws.OpText, []byte(msg))
+	err := wsutil.WriteServerText(conn, []byte(msg))
 	if err != nil {
 		fmt.Println("Send failed, ", err)
 	}
@@ -74,6 +74,7 @@ func (room *Room) ChangePlayer() {
 
 func (room *Room) SendAll(msg string) {
 	for _, conn := range room.connections {
+		// fmt.Println("sending all ", msg)
 		SendData(conn, msg)
 	}
 }

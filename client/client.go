@@ -22,7 +22,7 @@ func getEnv(key, fallback string) string {
 var hostName string = getEnv("BJ_HOST", "localhost")
 
 func sendData(conn net.Conn, msg string) (string, error) {
-	err := wsutil.WriteClientMessage(conn, ws.OpText, []byte(msg))
+	err := wsutil.WriteClientText(conn, []byte(msg))
 	if err != nil {
 		fmt.Printf("Send failed")
 		return "", err
@@ -31,10 +31,10 @@ func sendData(conn net.Conn, msg string) (string, error) {
 	return "OK", err
 }
 
-func readData(conn net.Conn) (string, error) {
-	msg_bytes, _, err := wsutil.ReadServerData(conn)
+func readData(conn net.Conn, i int) (string, error) {
+	msg_bytes, err := wsutil.ReadServerText(conn)
 	if err != nil {
-		fmt.Println("Receive failed")
+		fmt.Printf("[%d] Receive failed, err %s\n", i, err)
 		return "", err
 	}
 	msg := string(msg_bytes)
@@ -53,9 +53,9 @@ func play(i int, wg *sync.WaitGroup) {
 	// defer conn.Close()
 
 	fmt.Printf("[%d] connected\n", i)
-	fmt.Println("Waiting for game to begin")
+	fmt.Printf("[%d] Waiting for game to begin\n", i)
 
-	startMsg, err := readData(conn)
+	startMsg, err := readData(conn, i)
 	if startMsg != "Start" {
 		fmt.Printf("[%d] Wrong start msg received: %s\n", i, startMsg)
 	}
@@ -63,7 +63,7 @@ func play(i int, wg *sync.WaitGroup) {
 
 	// Round loop
 	for {
-		dealerHand, err := readData(conn)
+		dealerHand, err := readData(conn, i)
 		if err != nil {
 			fmt.Println("Reading dealer hand failed, exiting")
 			break
@@ -76,7 +76,7 @@ func play(i int, wg *sync.WaitGroup) {
 		}
 
 		for {
-			currentCountString, err := readData(conn)
+			currentCountString, err := readData(conn, i)
 			if err != nil {
 				break
 			}

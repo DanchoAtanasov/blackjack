@@ -12,3 +12,7 @@ test:
 
 coverage:
 	go test --cover ./...
+
+clean:
+	rm -rf logs/*
+	rm -rf results/*
