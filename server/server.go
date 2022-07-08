@@ -133,6 +133,7 @@ func (server *Server) Serve() {
 			conn, _, _, err := ws.UpgradeHTTP(r, w)
 			if err != nil {
 				// handle error
+				fmt.Println("Upgrade error, ", err)
 			}
 
 			fmt.Println("New player connected")
