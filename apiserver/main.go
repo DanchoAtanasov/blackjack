@@ -4,12 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 )
+
+type PlayerRequest struct {
+	Name  string
+	BuyIn int
+}
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
@@ -24,10 +30,7 @@ func play(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("could not read body %s\n", err)
 	}
 	fmt.Printf("body: %s\n", body)
-	type PlayerRequest struct {
-		Name  string
-		BuyIn int
-	}
+
 	var playerRequest PlayerRequest
 	err = json.Unmarshal([]byte(body), &playerRequest)
 	if err != nil {
@@ -42,6 +45,32 @@ func play(w http.ResponseWriter, r *http.Request) {
 	response := PlayerRequestResponse{GameServer: "localhost:8080", Token: uuid.NewString()}
 	responseString, _ := json.Marshal(response)
 	io.WriteString(w, string(responseString))
+
+	go storeSession(response.Token, playerRequest)
+}
+
+func storeSession(token string, playerRequest PlayerRequest) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	json, err := json.Marshal(playerRequest)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = client.Set(token, json, 0).Err()
+	if err != nil {
+		fmt.Println(err)
+	}
+	val, err := client.Get(token).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("got from redis %s\n", val)
+
 }
 
 func main() {
