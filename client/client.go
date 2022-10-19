@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -11,6 +15,11 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
+
+type PlayerRequestResponse struct {
+	GameServer string
+	Token      string
+}
 
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
@@ -42,9 +51,10 @@ func readData(conn net.Conn, i int) (string, error) {
 	return msg, err
 }
 
-func play(i int, wg *sync.WaitGroup) {
+func play(i int, wg *sync.WaitGroup, pl PlayerRequestResponse) {
 	// TODO add env variable for host
-	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), fmt.Sprintf("ws://%s:8080/", hostName))
+	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), fmt.Sprintf("ws://%s/", pl.GameServer))
+	// conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), fmt.Sprintf("ws://%s:8080/", hostName))
 	defer wg.Done()
 	if err != nil {
 		fmt.Printf("[%d] can not connect: %v\n", i, err)
@@ -124,12 +134,48 @@ func play(i int, wg *sync.WaitGroup) {
 	}
 }
 
+func findServer(i int) PlayerRequestResponse {
+	// TODO: Rename function and clean up
+	type PlayerRequest struct {
+		Name  string
+		BuyIn int
+	}
+	playerRequest := PlayerRequest{
+		Name:  fmt.Sprintf("dancho%d", i),
+		BuyIn: 55 + i,
+	}
+	postBody, _ := json.Marshal(playerRequest)
+	responseBody := bytes.NewBuffer(postBody)
+	//Leverage Go's HTTP Post function to make request
+	resp, err := http.Post("http://localhost:3333/play", "application/json", responseBody)
+	//Handle Error
+	if err != nil {
+		fmt.Printf("An Error Occured %v\n", err)
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+	//Read the response body
+	var playerRequestResponse PlayerRequestResponse
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = json.Unmarshal([]byte(body), &playerRequestResponse)
+	if err != nil {
+		fmt.Println("could not unmarshal body")
+	}
+
+	fmt.Printf("got %s, %s\n", playerRequestResponse.GameServer, playerRequestResponse.Token)
+	return playerRequestResponse
+}
+
 func main() {
 	var wg sync.WaitGroup
-	numPlayers := 18
+	numPlayers := 6
 	for i := 0; i < numPlayers; i++ {
 		wg.Add(1)
-		go play(i, &wg)
+		pl := findServer(i)
+		go play(i, &wg, pl)
 	}
 	wg.Wait()
 }
