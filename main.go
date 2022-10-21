@@ -15,6 +15,7 @@ import (
 	"blackjack/server"
 )
 
+// TODO: convert messages to json
 const (
 	STAND         string = "S"
 	HIT           string = "H"

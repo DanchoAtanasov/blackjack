@@ -38,11 +38,11 @@ func play(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("got %s, %d\n", playerRequest.Name, playerRequest.BuyIn)
-	type PlayerRequestResponse struct {
+	type BlackjackServerDetails struct {
 		GameServer string
 		Token      string
 	}
-	response := PlayerRequestResponse{GameServer: "localhost:8080", Token: uuid.NewString()}
+	response := BlackjackServerDetails{GameServer: "localhost:8080", Token: uuid.NewString()}
 	responseString, _ := json.Marshal(response)
 	io.WriteString(w, string(responseString))
 
@@ -69,11 +69,12 @@ func storeSession(token string, playerRequest PlayerRequest) {
 }
 
 func main() {
+	port := 3333
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getRoot)
 	mux.HandleFunc("/play", play)
 
-	err := http.ListenAndServe(":3333", mux)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 	} else if err != nil {

@@ -20,7 +20,7 @@ type Player struct {
 	Name  string
 	BuyIn int
 }
-type PlayerRequestResponse struct {
+type BlackjackServerDetails struct {
 	GameServer string
 	Token      string
 }
@@ -55,28 +55,36 @@ func readData(conn net.Conn, i int) (string, error) {
 	return msg, err
 }
 
-func play(i int, wg *sync.WaitGroup, player Player, pl PlayerRequestResponse) {
-	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), fmt.Sprintf("ws://%s/", pl.GameServer))
+func play(i int, wg *sync.WaitGroup, player Player, serverDetails BlackjackServerDetails) {
+	// TODO: break up function as it's too large
 	defer wg.Done()
+
+	// Start websocket connection to blackjack server
+	conn, _, _, err := ws.DefaultDialer.Dial(
+		context.Background(),
+		fmt.Sprintf("ws://%s/", serverDetails.GameServer),
+	)
 	if err != nil {
 		fmt.Printf("[%d] can not connect: %v\n", i, err)
 		return
 	}
-	// defer conn.Close()
+	//defer conn.Close() // TODO: maybe add
 
-	fmt.Printf("[%d] connected\n", i)
-	type DetailRequest struct {
+	fmt.Printf("[%s] connected\n", player.Name)
+
+	type Token struct {
 		Token string
 	}
-	detailRequest := DetailRequest{
-		Token: pl.Token,
+	token := Token{
+		Token: serverDetails.Token,
 	}
-	fmt.Print("sending details\n", i)
-	detailRequestString, err := json.Marshal(detailRequest)
+	tokenBytes, err := json.Marshal(token)
 	if err != nil {
-		fmt.Printf("[%d] can not marshal details: %v\n", i, err)
+		fmt.Printf("[%d] can not marshal token: %v\n", i, err)
 	}
-	_, err = sendData(conn, string(detailRequestString))
+
+	fmt.Printf("[%d] sending token to blackjack server\n", i)
+	_, err = sendData(conn, string(tokenBytes))
 	if err != nil {
 		fmt.Printf("[%d] can not send details: %v\n", i, err)
 	}
@@ -152,8 +160,7 @@ func play(i int, wg *sync.WaitGroup, player Player, pl PlayerRequestResponse) {
 	}
 }
 
-func findServer(player Player) PlayerRequestResponse {
-	// TODO: Rename function and clean up
+func findServer(player Player) BlackjackServerDetails {
 	postBody, _ := json.Marshal(player)
 	responseBody := bytes.NewBuffer(postBody)
 	// TODO: change hostname to env variable
@@ -164,18 +171,18 @@ func findServer(player Player) PlayerRequestResponse {
 	}
 	defer resp.Body.Close()
 
-	var playerRequestResponse PlayerRequestResponse
+	var gameDetails BlackjackServerDetails
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 	}
-	err = json.Unmarshal([]byte(body), &playerRequestResponse)
+	err = json.Unmarshal([]byte(body), &gameDetails)
 	if err != nil {
 		fmt.Println("could not unmarshal body")
 	}
 
-	fmt.Printf("got %s, %s\n", playerRequestResponse.GameServer, playerRequestResponse.Token)
-	return playerRequestResponse
+	fmt.Printf("got %s, %s\n", gameDetails.GameServer, gameDetails.Token)
+	return gameDetails
 }
 
 func main() {
@@ -184,11 +191,11 @@ func main() {
 	for i := 0; i < numPlayers; i++ {
 		wg.Add(1)
 		player := Player{
-			Name:  fmt.Sprintf("Player%d", i),
+			Name:  fmt.Sprintf("Player %d", i),
 			BuyIn: 100 * (i + 1),
 		}
-		pl := findServer(player)
-		go play(i, &wg, player, pl)
+		blackjackServerDetails := findServer(player)
+		go play(i, &wg, player, blackjackServerDetails)
 	}
 	wg.Wait()
 }
