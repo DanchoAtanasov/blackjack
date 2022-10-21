@@ -16,6 +16,10 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
+type Player struct {
+	Name  string
+	BuyIn int
+}
 type PlayerRequestResponse struct {
 	GameServer string
 	Token      string
@@ -51,10 +55,8 @@ func readData(conn net.Conn, i int) (string, error) {
 	return msg, err
 }
 
-func play(i int, wg *sync.WaitGroup, pl PlayerRequestResponse) {
-	// TODO add env variable for host
+func play(i int, wg *sync.WaitGroup, player Player, pl PlayerRequestResponse) {
 	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), fmt.Sprintf("ws://%s/", pl.GameServer))
-	// conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), fmt.Sprintf("ws://%s:8080/", hostName))
 	defer wg.Done()
 	if err != nil {
 		fmt.Printf("[%d] can not connect: %v\n", i, err)
@@ -63,6 +65,22 @@ func play(i int, wg *sync.WaitGroup, pl PlayerRequestResponse) {
 	// defer conn.Close()
 
 	fmt.Printf("[%d] connected\n", i)
+	type DetailRequest struct {
+		Token string
+	}
+	detailRequest := DetailRequest{
+		Token: pl.Token,
+	}
+	fmt.Print("sending details\n", i)
+	detailRequestString, err := json.Marshal(detailRequest)
+	if err != nil {
+		fmt.Printf("[%d] can not marshal details: %v\n", i, err)
+	}
+	_, err = sendData(conn, string(detailRequestString))
+	if err != nil {
+		fmt.Printf("[%d] can not send details: %v\n", i, err)
+	}
+
 	fmt.Printf("[%d] Waiting for game to begin\n", i)
 
 	startMsg, err := readData(conn, i)
@@ -134,27 +152,18 @@ func play(i int, wg *sync.WaitGroup, pl PlayerRequestResponse) {
 	}
 }
 
-func findServer(i int) PlayerRequestResponse {
+func findServer(player Player) PlayerRequestResponse {
 	// TODO: Rename function and clean up
-	type PlayerRequest struct {
-		Name  string
-		BuyIn int
-	}
-	playerRequest := PlayerRequest{
-		Name:  fmt.Sprintf("dancho%d", i),
-		BuyIn: 55 + i,
-	}
-	postBody, _ := json.Marshal(playerRequest)
+	postBody, _ := json.Marshal(player)
 	responseBody := bytes.NewBuffer(postBody)
-	//Leverage Go's HTTP Post function to make request
+	// TODO: change hostname to env variable
 	resp, err := http.Post("http://localhost:3333/play", "application/json", responseBody)
-	//Handle Error
 	if err != nil {
 		fmt.Printf("An Error Occured %v\n", err)
 		os.Exit(1)
 	}
 	defer resp.Body.Close()
-	//Read the response body
+
 	var playerRequestResponse PlayerRequestResponse
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -174,8 +183,12 @@ func main() {
 	numPlayers := 6
 	for i := 0; i < numPlayers; i++ {
 		wg.Add(1)
-		pl := findServer(i)
-		go play(i, &wg, pl)
+		player := Player{
+			Name:  fmt.Sprintf("Player%d", i),
+			BuyIn: 100 * (i + 1),
+		}
+		pl := findServer(player)
+		go play(i, &wg, player, pl)
 	}
 	wg.Wait()
 }

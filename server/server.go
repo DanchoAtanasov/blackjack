@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"net"
 	"net/http"
 	"os"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	settings "blackjack/configs"

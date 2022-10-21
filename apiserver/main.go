@@ -65,11 +65,6 @@ func storeSession(token string, playerRequest PlayerRequest) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	val, err := client.Get(token).Result()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("got from redis %s\n", val)
 
 }
 

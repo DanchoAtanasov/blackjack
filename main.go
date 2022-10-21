@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"strconv"
 
+	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 
 	settings "blackjack/configs"
@@ -33,6 +35,10 @@ func sendPlayer(conn net.Conn, message string) {
 func sendDealer(conn net.Conn, message string) {
 	// Do nothing, the dealer is in this server
 }
+
+// func readPlayerDetails(conn net.Conn, hand models.Hand) string {
+
+// }
 
 func readPlayerAction(conn net.Conn, hand models.Hand) string {
 	var input string
@@ -168,16 +174,63 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	clearHands(players)
 }
 
-func playRoom(room *server.Room, server *server.Server) {
+type PlayerDetails struct {
+	Name  string
+	BuyIn int
+}
+
+func fetchPlayerDetails(token string) PlayerDetails {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	val, err := client.Get(token).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("got from redis %s\n", val)
+
+	var pd PlayerDetails
+	err = json.Unmarshal([]byte(val), &pd)
+	if err != nil {
+		fmt.Println("failed to unmarshal")
+	}
+
+	return pd
+}
+
+func getPlayerDetails(conn net.Conn) PlayerDetails {
+	type Token struct {
+		Token string
+	}
+	var token Token
+	msg := server.ReadData(conn)
+	fmt.Printf("Received %s", msg)
+	err := json.Unmarshal([]byte(msg), &token)
+	if err != nil {
+		fmt.Println("Failed to unmarshal")
+	}
+	fmt.Println(token)
+	return fetchPlayerDetails(token.Token)
+}
+
+func playRoom(room *server.Room, server2 *server.Server) {
 	room.Log.Info("Getting a new shuffled deck of cards")
 	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe)
 
 	var players []models.Player
 	for i := 0; i < settings.RoomSize; i++ {
+		room.Log.Info("Getting player details")
+		currConn := room.GetCurrPlayerConn()
+		room.ChangePlayer()
+		pd := getPlayerDetails(*currConn)
+
 		players = append(players, models.Player{
-			Name:       "Player " + strconv.Itoa(i+1),
-			BuyIn:      settings.InitialBuyIn,
-			CurrentBet: settings.CurrBet,
+			Name:       pd.Name,
+			BuyIn:      pd.BuyIn,
+			CurrentBet: settings.CurrBet, // TODO: include this in the player details
 		})
 	}
 
