@@ -10,6 +10,8 @@ services:
       - ./blackjackserver/results:/root/app/results
     environment:
       - REDIS_HOST=redis
+    depends_on:
+      - redis
 
   apiserver:
     build: apiserver/
@@ -18,6 +20,8 @@ services:
       - "3333:3333"
     environment:
       - REDIS_HOST=redis
+    depends_on:
+      - redis
       
   redis:
     image: redis:latest
