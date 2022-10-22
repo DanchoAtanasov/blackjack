@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import PlayButton from './lib/PlayButton.svelte';
 </script>
 

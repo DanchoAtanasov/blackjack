@@ -1,7 +1,7 @@
 
 <script>
   import { v4 as uuidv4 } from 'uuid';
-  const play = () => {
+  const play = async () => {
     console.log("Button clicked")
     console.log("Send details to api server")
     const apiServerUrl = "http://localhost:3333/play"
@@ -10,7 +10,7 @@
       "BuyIn": 69,
     };
     var token;
-    fetch(apiServerUrl, {
+    await fetch(apiServerUrl, {
       method: "POST",
       headers: {'Content-Type': 'application/json'}, 
       body: JSON.stringify(data),
@@ -22,18 +22,18 @@
     });
 
     // // Create WebSocket connection.
-    // const socket = new WebSocket('ws://localhost:8080');
+    const socket = new WebSocket('ws://localhost:8080');
 
-    // let randomId = uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
-    // // Connection opened
-    // socket.addEventListener('open', (event) => {
-    //     socket.send(`{"Token": "${randomId}"}`);
-    // });
+    let randomId = uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+    // Connection opened
+    socket.addEventListener('open', (event) => {
+        socket.send(`{"Token": "${token}"}`);
+    });
 
-    // // Listen for messages
-    // socket.addEventListener('message', (event) => {
-    //     console.log('Message from server ', event.data);
-    // });
+    // Listen for messages
+    socket.addEventListener('message', (event) => {
+        console.log('Message from server ', event.data);
+    });
   }
 </script>
 
