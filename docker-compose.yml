@@ -1,9 +1,9 @@
 version: "3.9"
 
 services:
-  blackjack:
-    build: .
-    container_name: blackjack
+  blackjackserver:
+    build: blackjackserver/
+    container_name: blackjackserver
     ports:
       - "8080:8080"
     volumes:
