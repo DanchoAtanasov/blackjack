@@ -1,14 +1,19 @@
 
 <script>
   import { v4 as uuidv4 } from 'uuid';
+
+  var name;
+  var buyin;
+
   const play = async () => {
     console.log("Button clicked")
     console.log("Send details to api server")
     const apiServerUrl = "http://localhost:3333/play"
     const data = {
-      "Name": "UIPlayer",
-      "BuyIn": 69,
+      "Name": name,
+      "BuyIn": Number(buyin),
     };
+    console.log(data);
     var token;
     await fetch(apiServerUrl, {
       method: "POST",
@@ -37,6 +42,11 @@
   }
 </script>
 
+
+<form class="content">
+  <input type="text" bind:value={name} placeholder="Name" />
+  <input type="text" bind:value={buyin} placeholder="Buy In"/>
+</form>
 <button on:click={play}>
   Play
 </button>
