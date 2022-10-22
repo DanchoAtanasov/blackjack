@@ -18,6 +18,12 @@ services:
     container_name: apiserver
     ports:
       - "3333:3333"
+      
+  redis:
+    image: redis:latest
+    container_name: redis-instance
+    ports:
+      - "6379:6379"
     # deploy:
     #   mode: replicated
     #   replicas: 2
