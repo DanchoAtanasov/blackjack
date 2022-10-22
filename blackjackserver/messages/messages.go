@@ -1,5 +1,6 @@
 package messages
 
+// TODO: convert messages to json
 const (
 	STAND         string = "S"
 	HIT           string = "H"

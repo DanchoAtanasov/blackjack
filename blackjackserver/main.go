@@ -16,15 +16,6 @@ import (
 	"blackjack/server"
 )
 
-// TODO: convert messages to json
-// const (
-// 	messages.STAND         string = "S"
-// 	messages.HIT           string = "H"
-// 	messages.BUST_MSG      string = "Bust"
-// 	messages.BLACKJACK_MSG string = "Blackjack"
-// 	messages.OVER_MSG      string = "Over"
-// 	messages.START_MSG     string = "Start"
-// )
 const DIVIDER string = "---------------------------------"
 
 func getEnv(key, fallback string) string {
@@ -46,10 +37,6 @@ func sendPlayer(conn net.Conn, message string) {
 func sendDealer(conn net.Conn, message string) {
 	// Do nothing, the dealer is in this server
 }
-
-// func readPlayerDetails(conn net.Conn, hand models.Hand) string {
-
-// }
 
 func readPlayerAction(conn net.Conn, hand models.Hand) string {
 	var input string
