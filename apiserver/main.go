@@ -32,7 +32,17 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func play(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got /play request\n")
+	fmt.Printf("got %s /play request\n", r.Method)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Max-Age", "240")
+
+	if r.Method == "OPTIONS" {
+		io.WriteString(w, "")
+		return
+	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
