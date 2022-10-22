@@ -7,7 +7,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./results:/root/app/results
+      - ./blackjackserver/results:/root/app/results
     environment:
       - REDIS_HOST=redis
 
