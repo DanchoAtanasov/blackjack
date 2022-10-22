@@ -14,8 +14,12 @@ FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates libc6-compat 
 
-WORKDIR /root/
+RUN mkdir -p /root/app
+
+WORKDIR /root/app
 
 COPY --from=builder /usr/local/bin/app ./
+
+# RUN mkdir -p results
 
 CMD ["./app"]

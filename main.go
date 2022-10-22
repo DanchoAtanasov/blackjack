@@ -26,6 +26,15 @@ const (
 )
 const DIVIDER string = "---------------------------------"
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
+
 type senderFunc func(net.Conn, string)
 type readerFunc func(net.Conn, models.Hand) string
 
@@ -182,7 +191,7 @@ type PlayerDetails struct {
 
 func fetchPlayerDetails(token string) PlayerDetails {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     fmt.Sprintf("%s:6379", REDIS_HOST),
 		Password: "",
 		DB:       0,
 	})

@@ -12,6 +12,15 @@ import (
 	"os"
 )
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
+
 type PlayerRequest struct {
 	Name  string
 	BuyIn int
@@ -51,7 +60,7 @@ func play(w http.ResponseWriter, r *http.Request) {
 
 func storeSession(token string, playerRequest PlayerRequest) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     fmt.Sprintf("%s:6379", REDIS_HOST),
 		Password: "",
 		DB:       0,
 	})

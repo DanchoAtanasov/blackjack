@@ -33,6 +33,7 @@ func getEnv(key, fallback string) string {
 }
 
 var hostName string = getEnv("BJ_HOST", "localhost")
+var API_SERVER_HOST string = getEnv("API_SERVER_HOST", "localhost")
 
 func sendData(conn net.Conn, msg string) (string, error) {
 	err := wsutil.WriteClientText(conn, []byte(msg))
@@ -164,7 +165,11 @@ func findServer(player Player) BlackjackServerDetails {
 	postBody, _ := json.Marshal(player)
 	responseBody := bytes.NewBuffer(postBody)
 	// TODO: change hostname to env variable
-	resp, err := http.Post("http://localhost:3333/play", "application/json", responseBody)
+	resp, err := http.Post(
+		fmt.Sprintf("http://%s:3333/play", API_SERVER_HOST),
+		"application/json",
+		responseBody,
+	)
 	if err != nil {
 		fmt.Printf("An Error Occured %v\n", err)
 		os.Exit(1)
