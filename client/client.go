@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"sync"
 
+	"client/messages"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
@@ -74,12 +75,14 @@ func waitForStartMessage(conn net.Conn) {
 	if err != nil {
 		fmt.Printf("Could not receive start message: %s\n", err)
 	}
-	if startMsg != "Start" {
+	if startMsg != messages.START {
 		fmt.Printf("Wrong start msg received: %s\n", startMsg)
 	}
 	// TODO: Add retry
 }
 
+// playHand contains logic for a player to play 1 hand.
+// Logic is simple and it goes like: if below 16 hit, otherwise stand.
 func playHand(conn net.Conn, i int) {
 	for {
 		currentCountString, err := readData(conn)
@@ -87,12 +90,12 @@ func playHand(conn net.Conn, i int) {
 			break
 		}
 
-		if currentCountString == "Blackjack" {
+		if currentCountString == messages.BLACKJACK {
 			fmt.Printf("[%d] got Blackjack!\n", i)
 			break
 		}
 
-		if currentCountString == "Bust" {
+		if currentCountString == messages.BUST {
 			fmt.Printf("[%d] Bust\n", i)
 			break
 		}
@@ -106,9 +109,9 @@ func playHand(conn net.Conn, i int) {
 		fmt.Printf("[%d]Current hand: %d\n", i, currentCount)
 		var action string
 		if currentCount < 16 {
-			action = "H"
+			action = messages.HIT
 		} else {
-			action = "S"
+			action = messages.STAND
 		}
 
 		_, err = sendData(conn, action)
@@ -116,7 +119,7 @@ func playHand(conn net.Conn, i int) {
 			break
 		}
 
-		if action == "S" {
+		if action == messages.STAND {
 			break
 		}
 	}
@@ -131,7 +134,7 @@ func playRound(conn net.Conn, i int) {
 		}
 
 		fmt.Printf("[%d] Dealer's hand: %s\n", i, dealerHand)
-		if dealerHand == "Over" {
+		if dealerHand == messages.OVER {
 			fmt.Println("Game is over, ending")
 			break
 		}
@@ -151,7 +154,7 @@ func play(i int, wg *sync.WaitGroup, player Player, gameDetails GameDetails) {
 		fmt.Printf("[%d] can not connect: %v\n", i, err)
 		return
 	}
-	defer conn.Close() // TODO: maybe add
+	defer conn.Close()
 
 	fmt.Printf("[%s] connected\n", player.Name)
 
