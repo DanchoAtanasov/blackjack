@@ -1,9 +1,24 @@
 
 <script>
   import { v4 as uuidv4 } from 'uuid';
+  import { createEventDispatcher } from 'svelte';
+  import { name, buyin } from '../stores';
 
-  var name;
-  var buyin;
+  const dispatch = createEventDispatcher();
+
+  var nameInput, buyinInput;
+
+  function startGame() {
+    dispatch('start-game', {
+      name: name,
+      buyin: buyin,
+    });
+  }
+
+  function putInStore() {
+    name.set(nameInput);
+    buyin.set(buyinInput);
+  }
 
   const play = async () => {
     console.log("Button clicked")
@@ -44,10 +59,10 @@
 
 
 <form class="content">
-  <input type="text" bind:value={name} placeholder="Name" />
-  <input type="text" bind:value={buyin} placeholder="Buy In"/>
+  <input type="text" bind:value={nameInput} placeholder="Name" />
+  <input type="text" bind:value={buyinInput} placeholder="Buy In"/>
 </form>
-<button on:click={play}>
+<button on:click={putInStore}>
   Play
 </button>
   
