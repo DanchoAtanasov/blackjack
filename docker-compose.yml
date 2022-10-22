@@ -1,15 +1,26 @@
 version: "3.9"
 
 services:
-  app:
-    image: 127.0.0.1:5000/blackjack
+  blackjack:
+    # image: 127.0.0.1:5000/blackjack
     build: .
     container_name: blackjack
     ports:
       - "8080:8080"
-    deploy:
-      mode: replicated
-      replicas: 2
+    # deploy:
+    #   mode: replicated
+    #   replicas: 2
+    # TODO add volume
+
+  apiserver:
+    # image: 127.0.0.1:5000/blackjack
+    build: apiserver/
+    container_name: apiserver
+    ports:
+      - "3333:3333"
+    # deploy:
+    #   mode: replicated
+    #   replicas: 2
     # TODO add volume
 
   # client:
