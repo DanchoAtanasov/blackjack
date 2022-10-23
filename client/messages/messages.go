@@ -1,7 +1,9 @@
 package messages
 
-import "encoding/json"
-import "client/models"
+import (
+	"client/models"
+	"encoding/json"
+)
 
 type Message struct {
 	Type    string `json:"type"`
@@ -15,7 +17,6 @@ func makeJsonMessage(type_ string, message_ string) string {
 	}
 	messageBytes, _ := json.Marshal(newMessage)
 	return string(messageBytes)
-
 }
 
 func makeActionMessage(action string) string {
@@ -58,9 +59,19 @@ func PlayerHandMessage(hand models.Hand) string {
 	return makeJsonMessage("PlayerHand", hand.ToJson())
 }
 
+func DecodePlayerHandMessage(msg string) (models.Hand, error) {
+	var message Message
+	err := json.Unmarshal([]byte(msg), &message)
+	var hand models.Hand
+	err = json.Unmarshal([]byte(message.Message), &hand)
+	return hand, err
+}
+
 func DealerHandMessage(hand models.Hand) string {
 	return makeJsonMessage("DealerHand", hand.ToJson())
 }
+
+// TODO: Add decode for dealer hand message
 
 var (
 	START_MSG     string = gameStart() // {"type":"Game","message":"Start"}

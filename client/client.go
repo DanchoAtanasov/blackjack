@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"sync"
 
 	"client/messages"
@@ -75,7 +74,7 @@ func waitForStartMessage(conn net.Conn) {
 	if err != nil {
 		fmt.Printf("Could not receive start message: %s\n", err)
 	}
-	if startMsg != messages.STAND_MSG {
+	if startMsg != messages.START_MSG {
 		fmt.Printf("Wrong start msg received: %s\n", startMsg)
 	}
 	// TODO: Add retry
@@ -85,30 +84,32 @@ func waitForStartMessage(conn net.Conn) {
 // Logic is simple and it goes like: if below 16 hit, otherwise stand.
 func playHand(conn net.Conn, i int) {
 	for {
-		currentCountString, err := readData(conn)
+		handMessage, err := readData(conn)
 		if err != nil {
 			break
 		}
 
-		if currentCountString == messages.BLACKJACK_MSG {
+		if handMessage == messages.BLACKJACK_MSG {
 			fmt.Printf("[%d] got Blackjack!\n", i)
 			break
 		}
 
-		if currentCountString == messages.BUST_MSG {
+		if handMessage == messages.BUST_MSG {
 			fmt.Printf("[%d] Bust\n", i)
 			break
 		}
 
-		currentCount, err := strconv.Atoi(currentCountString)
+		fmt.Println(handMessage)
+		currHand, err := messages.DecodePlayerHandMessage(handMessage)
+
 		if err != nil {
 			fmt.Printf("[%d] Error converting count. %v\n", i, err)
 			break
 		}
 
-		fmt.Printf("[%d]Current hand: %d\n", i, currentCount)
+		fmt.Printf("[%d]Current hand: %v, %d\n", i, currHand, currHand.Sum)
 		var action string
-		if currentCount < 16 {
+		if currHand.Sum < 16 {
 			action = messages.HIT_MSG
 		} else {
 			action = messages.STAND_MSG
@@ -133,11 +134,12 @@ func playRound(conn net.Conn, i int) {
 			break
 		}
 
-		fmt.Printf("[%d] Dealer's hand: %s\n", i, dealerHand)
 		if dealerHand == messages.OVER_MSG {
 			fmt.Println("Game is over, ending")
 			break
 		}
+
+		fmt.Printf("[%d] Dealer's hand: %s\n", i, dealerHand)
 		playHand(conn, i)
 	}
 }
@@ -204,7 +206,7 @@ func registerPlayer(player Player) GameDetails {
 
 func main() {
 	var wg sync.WaitGroup
-	numPlayers := 6
+	numPlayers := 1
 	for i := 0; i < numPlayers; i++ {
 		wg.Add(1)
 

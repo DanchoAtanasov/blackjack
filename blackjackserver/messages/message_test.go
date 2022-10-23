@@ -60,7 +60,7 @@ func TestMessage(t *testing.T) {
 			Suit:     "Clubs",
 		})
 		message := PlayerHandMessage(hand)
-		expected := `{"type":"PlayerHand","message":"[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"},{\"ValueStr\":\"3\",\"Suit\":\"Clubs\"}]"}`
+		expected := `{"type":"PlayerHand","message":"{\"cards\":[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"},{\"ValueStr\":\"3\",\"Suit\":\"Clubs\"}],\"sum\":0}"}`
 		assertStringEqual(t, message, expected)
 	})
 
@@ -71,7 +71,7 @@ func TestMessage(t *testing.T) {
 			Suit:     "Spades",
 		})
 		message := DealerHandMessage(hand)
-		expected := `{"type":"DealerHand","message":"[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"}]"}`
+		expected := `{"type":"DealerHand","message":"{\"cards\":[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"}],\"sum\":0}"}`
 		assertStringEqual(t, message, expected)
 	})
 }

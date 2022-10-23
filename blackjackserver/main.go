@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
@@ -92,8 +91,8 @@ func playTurn(
 			break
 		}
 
-		// Send current count
-		sendAction(conn, strconv.Itoa(player.Hand.Sum))
+		// Send current hand
+		sendAction(conn, messages.PlayerHandMessage(player.Hand))
 
 		// Read action
 		input := readAction(conn, player.Hand)
@@ -114,7 +113,6 @@ func clearHands(players []models.Player) {
 func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	dealer := &models.Player{Name: "Dealer"}
 
-	room.Log.Info("Dealing")
 	for i := range players {
 		players[i].Hand.AddCard(deck.DealCard())
 	}
@@ -139,7 +137,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 			room.Log.Info("Blackjack!")
 			sendPlayer(currConn, messages.BLACKJACK_MSG)
 		} else {
-			room.Log.Printf("Hit(%s) or Stand(%s)", messages.HIT_MSG, messages.STAND_MSG)
+			room.Log.Printf("Hit or Stand")
 			playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log)
 		}
 

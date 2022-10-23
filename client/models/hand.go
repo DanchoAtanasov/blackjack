@@ -11,10 +11,10 @@ type handInterface interface {
 }
 
 type Hand struct {
-	Cards       []Card
-	Sum         int
-	NumAces     int // is used to implement soft count
-	IsBlackjack bool
+	Cards       []Card `json:"cards"`
+	Sum         int    `json:"sum"`
+	NumAces     int    `json:"-"` // is used to implement soft count
+	IsBlackjack bool   `json:"-"`
 }
 
 func (hand *Hand) AddCard(card Card) {
@@ -42,7 +42,7 @@ func (hand Hand) IsBust() bool {
 }
 
 func (hand *Hand) ToJson() string {
-	result, _ := json.Marshal(hand.Cards)
+	result, _ := json.Marshal(*hand)
 	return string(result)
 }
 
