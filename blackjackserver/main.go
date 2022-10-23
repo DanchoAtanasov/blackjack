@@ -42,7 +42,7 @@ func readPlayerAction(conn net.Conn, hand models.Hand) string {
 	var input string
 	for {
 		input = server.ReadData(conn)
-		if input == messages.HIT || input == messages.STAND {
+		if input == messages.HIT_MSG || input == messages.STAND_MSG {
 			break
 		}
 		fmt.Printf("Wrong input %s, Try again", input)
@@ -52,12 +52,12 @@ func readPlayerAction(conn net.Conn, hand models.Hand) string {
 
 func readDealerAction(conn net.Conn, hand models.Hand) string {
 	if hand.Sum > 17 {
-		return messages.STAND
+		return messages.STAND_MSG
 	}
 	if hand.Sum == 17 && hand.NumAces <= 0 {
-		return messages.STAND
+		return messages.STAND_MSG
 	}
-	return messages.HIT
+	return messages.HIT_MSG
 }
 
 func saveResultToFile(players []models.Player, id string) {
@@ -97,7 +97,7 @@ func playTurn(
 
 		// Read action
 		input := readAction(conn, player.Hand)
-		if input == messages.STAND {
+		if input == messages.STAND_MSG {
 			break
 		}
 
@@ -139,7 +139,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 			room.Log.Info("Blackjack!")
 			sendPlayer(currConn, messages.BLACKJACK_MSG)
 		} else {
-			room.Log.Printf("Hit(%s) or Stand(%s)", messages.HIT, messages.STAND)
+			room.Log.Printf("Hit(%s) or Stand(%s)", messages.HIT_MSG, messages.STAND_MSG)
 			playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log)
 		}
 
