@@ -1,12 +1,11 @@
 <script lang="ts">
   import PlayButton from './lib/PlayButton.svelte';
-  import { name, buyin } from './stores'
+  import { name, buyin, dealerCard, dealerSuit } from './stores'
 
   import { startSession } from './Session';
 
   function handleStartGame(event) {
-    console.log(event);
-    startSession(event.detail.name, event.detail.buyin);
+    startSession();
   }
 </script>
 
@@ -18,6 +17,7 @@
   </div>
 
   <p>Name is {$name}, buy in: {$buyin}</p>
+  <p>Dealer's hand {$dealerCard}, {$dealerSuit}</p>
 
 </main>
 

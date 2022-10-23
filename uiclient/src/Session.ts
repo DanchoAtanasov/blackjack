@@ -1,4 +1,4 @@
-import { name, buyin } from './stores'
+import { name, buyin, dealerCard, dealerSuit } from './stores'
 import { get } from 'svelte/store'
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,6 +15,7 @@ export async function startSession() {
     };
     console.log(data);
     var token;
+    var blackjackHost;
     await fetch(apiServerUrl, {
       method: "POST",
       headers: {'Content-Type': 'application/json'}, 
@@ -23,11 +24,12 @@ export async function startSession() {
     ).then(resData => {
       console.log(resData);
       token = resData.Token;
+      blackjackHost = resData.GameServer;
       console.log(token);
     });
 
     // // Create WebSocket connection.
-    const socket = new WebSocket('ws://localhost:8080');
+    const socket = new WebSocket(`ws://${blackjackHost}`);
 
     let randomId = uuidv4();
     // Connection opened
@@ -38,6 +40,10 @@ export async function startSession() {
     // Listen for messages
     socket.addEventListener('message', (event) => {
         console.log('Message from server ', event.data);
+        var dealerHand = JSON.parse(event.data)[0];
+        dealerCard.set(dealerHand.ValueStr);
+        dealerSuit.set(dealerHand.Suit);
+        
     });
 }
 
