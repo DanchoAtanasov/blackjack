@@ -75,7 +75,7 @@ func waitForStartMessage(conn net.Conn) {
 	if err != nil {
 		fmt.Printf("Could not receive start message: %s\n", err)
 	}
-	if startMsg != messages.START {
+	if startMsg != messages.STAND_MSG {
 		fmt.Printf("Wrong start msg received: %s\n", startMsg)
 	}
 	// TODO: Add retry
@@ -90,12 +90,12 @@ func playHand(conn net.Conn, i int) {
 			break
 		}
 
-		if currentCountString == messages.BLACKJACK {
+		if currentCountString == messages.BLACKJACK_MSG {
 			fmt.Printf("[%d] got Blackjack!\n", i)
 			break
 		}
 
-		if currentCountString == messages.BUST {
+		if currentCountString == messages.BUST_MSG {
 			fmt.Printf("[%d] Bust\n", i)
 			break
 		}
@@ -109,9 +109,9 @@ func playHand(conn net.Conn, i int) {
 		fmt.Printf("[%d]Current hand: %d\n", i, currentCount)
 		var action string
 		if currentCount < 16 {
-			action = messages.HIT
+			action = messages.HIT_MSG
 		} else {
-			action = messages.STAND
+			action = messages.STAND_MSG
 		}
 
 		_, err = sendData(conn, action)
@@ -119,7 +119,7 @@ func playHand(conn net.Conn, i int) {
 			break
 		}
 
-		if action == messages.STAND {
+		if action == messages.STAND_MSG {
 			break
 		}
 	}
@@ -134,7 +134,7 @@ func playRound(conn net.Conn, i int) {
 		}
 
 		fmt.Printf("[%d] Dealer's hand: %s\n", i, dealerHand)
-		if dealerHand == messages.OVER {
+		if dealerHand == messages.OVER_MSG {
 			fmt.Println("Game is over, ending")
 			break
 		}
