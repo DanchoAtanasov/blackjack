@@ -1,6 +1,7 @@
 package messages
 
 import "encoding/json"
+import "blackjack/models"
 
 type Message struct {
 	Type    string `json:"type"`
@@ -53,18 +54,21 @@ func gameStart() string {
 	return makeGameMessage("Start")
 }
 
-func makeHandMessage(hand string) {
-
+func PlayerHandMessage(hand models.Hand) string {
+	return makeJsonMessage("PlayerHand", hand.ToJson())
 }
 
-// TODO: convert messages to json
+func DealerHandMessage(hand models.Hand) string {
+	return makeJsonMessage("DealerHand", hand.ToJson())
+}
+
 var (
-	STAND_MSG     string = stand()
-	HIT_MSG       string = hit()
-	BUST_MSG      string = bust()
-	BLACKJACK_MSG string = blackjack()
-	OVER_MSG      string = gameOver()
-	START_MSG     string = gameStart()
+	START_MSG     string = gameStart() // {"type":"Game","message":"Start"}
+	OVER_MSG      string = gameOver()  // {"type":"Game","message":"Over"}
+	HIT_MSG       string = hit()       // {"type":"PlayerAction","message":"Hit"}
+	STAND_MSG     string = stand()     // {"type":"PlayerAction","message":"Stand"}
+	BUST_MSG      string = bust()      // {"type":"HandState","message":"Bust"}
+	BLACKJACK_MSG string = blackjack() // {"type":"HandState","message":"Blackjack"}
 	// dealer hand
 	// player hand
 )

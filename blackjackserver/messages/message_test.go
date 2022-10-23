@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"blackjack/models"
 	"testing"
 )
 
@@ -45,6 +46,32 @@ func TestMessage(t *testing.T) {
 	t.Run("test blackjack message", func(t *testing.T) {
 		message := blackjack()
 		expected := `{"type":"HandState","message":"Blackjack"}`
+		assertStringEqual(t, message, expected)
+	})
+
+	t.Run("test player hand message", func(t *testing.T) {
+		hand := models.Hand{}
+		hand.AddCard(models.Card{
+			ValueStr: "2",
+			Suit:     "Spades",
+		})
+		hand.AddCard(models.Card{
+			ValueStr: "3",
+			Suit:     "Clubs",
+		})
+		message := PlayerHandMessage(hand)
+		expected := `{"type":"PlayerHand","message":"[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"},{\"ValueStr\":\"3\",\"Suit\":\"Clubs\"}]"}`
+		assertStringEqual(t, message, expected)
+	})
+
+	t.Run("test dealer hand message", func(t *testing.T) {
+		hand := models.Hand{}
+		hand.AddCard(models.Card{
+			ValueStr: "2",
+			Suit:     "Spades",
+		})
+		message := DealerHandMessage(hand)
+		expected := `{"type":"DealerHand","message":"[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"}]"}`
 		assertStringEqual(t, message, expected)
 	})
 }
