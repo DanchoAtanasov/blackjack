@@ -93,6 +93,7 @@ func main() {
 	mux.HandleFunc("/", getRoot)
 	mux.HandleFunc("/play", play)
 
+	fmt.Printf("Api server started on port %d\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
