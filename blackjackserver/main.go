@@ -122,7 +122,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	}
 
 	room.Log.Printf("Dealer's hand: %v", dealer.Hand.Cards)
-	room.SendAll(dealer.Hand.ToJson())
+	room.SendAll(messages.DealerHandMessage(dealer.Hand))
 
 	currConn := *room.GetCurrPlayerConn()
 	// Players' turn

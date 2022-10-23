@@ -39,11 +39,28 @@ export async function startSession() {
 
     // Listen for messages
     socket.addEventListener('message', (event) => {
+        // TODO: improve code quality here
         console.log('Message from server ', event.data);
-        var dealerHand = JSON.parse(event.data)[0];
-        dealerCard.set(dealerHand.ValueStr);
-        dealerSuit.set(dealerHand.Suit);
-        
+        var message = JSON.parse(event.data);
+        if (message.type === "Game") {
+          if (message.message === "Start") {
+            console.log("Game started");
+          } else if (message.message === "Over") {
+            console.log("Game over");
+          } else {
+            console.log("Wrong game msg");
+          }
+          return
+        } else if (message.type === "DealerHand") {
+          console.log("Dealer hand");
+          console.log(message.message);
+          var dealerHand = JSON.parse(message.message).cards[0];
+          dealerCard.set(dealerHand.ValueStr);
+          dealerSuit.set(dealerHand.Suit);
+          return
+        } else {
+          console.log(`Got weird event ${event.data}`);
+        }
     });
 }
 
