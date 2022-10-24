@@ -2,10 +2,11 @@
   import PlayButton from './lib/PlayButton.svelte';
   import { name, buyin, dealerCard, dealerSuit } from './stores'
 
-  import { startSession } from './Session';
+  import Session from './Session';
 
   function handleStartGame(event) {
-    startSession();
+    var session = new Session();
+    session.connect();
   }
 </script>
 
