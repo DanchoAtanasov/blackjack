@@ -64,6 +64,12 @@ export default class Session {
     this.socket.send(JSON.stringify(hitMessage));
   }
 
+  sendStand() {
+    console.log("Sending stand");
+    var standMessage = {"type": "PlayerAction", "message": "Stand"}
+    this.socket.send(JSON.stringify(standMessage));
+  }
+
   addMessageListeners() {
     // Listen for messages
     this.socket.addEventListener('message', (event) => {
