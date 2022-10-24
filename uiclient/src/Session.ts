@@ -1,4 +1,4 @@
-import { name, buyin, dealerCard, dealerSuit } from './stores'
+import { name, buyin, dealerCard, dealerSuit, playerCard, playerSuit } from './stores'
 import { get } from 'svelte/store'
 import { v4 as uuidv4 } from 'uuid';
 
@@ -30,7 +30,6 @@ export default class Session {
   constructor() {
     console.log("New session object");
     this.socket = undefined;
-    
   }
 
   async connect() {
@@ -62,11 +61,20 @@ export default class Session {
           case "DealerHand":
             this.handleDealerHandMessages(message);
             break;
+          case "PlayerHand":
+            this.handlePlayerHandMessages(message);
+            break;
           default:
             console.log("Message type not recognized");
             break;
         }
     });
+  }
+
+  handlePlayerHandMessages(message: Message){
+    var playerHand = JSON.parse(message.message).cards[0];
+    playerCard.set(playerHand.ValueStr);
+    playerSuit.set(playerHand.Suit);
   }
 
   handleDealerHandMessages(message: Message){

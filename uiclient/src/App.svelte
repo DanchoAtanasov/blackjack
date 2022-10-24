@@ -1,6 +1,6 @@
 <script lang="ts">
   import PlayButton from './lib/PlayButton.svelte';
-  import { name, buyin, dealerCard, dealerSuit } from './stores'
+  import { name, buyin, dealerCard, dealerSuit, playerCard, playerSuit } from './stores'
 
   import Session from './Session';
 
@@ -19,6 +19,7 @@
 
   <p>Name is {$name}, buy in: {$buyin}</p>
   <p>Dealer's hand {$dealerCard}, {$dealerSuit}</p>
+  <p>Player's hand {$playerCard}, {$playerSuit}</p>
 
 </main>
 
