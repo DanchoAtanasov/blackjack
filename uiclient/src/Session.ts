@@ -26,10 +26,12 @@ type Message = {
 
 export default class Session {
   private socket: WebSocket;
+  private active: boolean;
 
   constructor() {
     console.log("New session object");
     this.socket = undefined;
+    this.active = false;
   }
 
   async connect() {
@@ -46,6 +48,20 @@ export default class Session {
     });
 
     this.addMessageListeners();
+    this.active = true;
+    console.log(this.socket);
+    
+  }
+
+  isActive(): boolean {
+    console.log(this.active);
+    return this.active
+  }
+
+  sendHit() {
+    console.log("Sending hit");
+    var hitMessage = {"type": "PlayerAction", "message": "Hit"}
+    this.socket.send(JSON.stringify(hitMessage));
   }
 
   addMessageListeners() {
