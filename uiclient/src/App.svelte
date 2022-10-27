@@ -2,7 +2,7 @@
   import PlayButton from './lib/PlayButton.svelte';
   import HitButton from './lib/HitButton.svelte';
   import StandButton from './lib/StandButton.svelte';
-  import { name, buyin, dealerCard, dealerSuit, playerCard, playerSuit } from './stores'
+  import { name, buyin, dealerHandStore, playerHandStore } from './stores'
 
   import Session from './Session';
 
@@ -37,8 +37,15 @@
   {/if}
 
   <p>Name is {$name}, buy in: {$buyin}</p>
-  <p>Dealer's hand {$dealerCard}, {$dealerSuit}</p>
-  <p>Player's hand {$playerCard}, {$playerSuit}</p>
+  <p>Dealer's hand:</p>
+  {#each $dealerHandStore as dealerCard}
+    <p>{dealerCard.ValueStr} {dealerCard.Suit}</p>
+	{/each}
+
+  <p>Player's hand:</p>
+  {#each $playerHandStore as playerCard}
+    <p> {playerCard.ValueStr} {playerCard.Suit}</p>
+	{/each}
 
 </main>
 

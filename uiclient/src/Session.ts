@@ -1,4 +1,4 @@
-import { name, buyin, dealerCard, dealerSuit, playerCard, playerSuit } from './stores'
+import { name, buyin, dealerHandStore, playerHandStore } from './stores'
 import { get } from 'svelte/store'
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,12 +24,16 @@ type Message = {
   message: string,
 }
 
+type Hand = {
+  ValueStr: string,
+  Suit: string,
+}[];
+
 export default class Session {
   private socket: WebSocket;
   private active: boolean;
 
   constructor() {
-    console.log("New session object");
     this.socket = undefined;
     this.active = false;
   }
@@ -94,15 +98,14 @@ export default class Session {
   }
 
   handlePlayerHandMessages(message: Message){
-    var playerHand = JSON.parse(message.message).cards[0];
-    playerCard.set(playerHand.ValueStr);
-    playerSuit.set(playerHand.Suit);
+    
+    var playerHand: Hand = JSON.parse(message.message).cards;
+    playerHandStore.set(playerHand);
   }
 
   handleDealerHandMessages(message: Message){
-    var dealerHand = JSON.parse(message.message).cards[0];
-    dealerCard.set(dealerHand.ValueStr);
-    dealerSuit.set(dealerHand.Suit);
+    var dealerHand: Hand = JSON.parse(message.message).cards;
+    dealerHandStore.set(dealerHand);
   }
 
   handleGameMessages(message: Message){
@@ -112,6 +115,7 @@ export default class Session {
         break;
       case "Over":
         console.log("Game over");
+        this.active = false
         break;
       default:
         console.log("Game message not recognized");
