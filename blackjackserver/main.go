@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
@@ -86,17 +87,23 @@ func playTurn(
 		log.Printf("%s's hand is %v", player.Name, player.Hand.Cards)
 		log.Printf("Current count: %d", player.Hand.Sum)
 
-		if player.Hand.IsBust() {
-			log.Info("Over 21, bust")
-			sendAction(conn, messages.BUST_MSG, room)
-			break
-		}
-
 		// Send current hand
 		if player.Name == "Dealer" {
 			sendAction(conn, messages.DealerHandMessage(player.Hand), room)
 		} else {
 			sendAction(conn, messages.PlayerHandMessage(player.Hand), room)
+		}
+
+		if player.Hand.IsBlackjack {
+			room.Log.Info("Blackjack!")
+			sendAction(conn, messages.BLACKJACK_MSG, room)
+			break
+		}
+
+		if player.Hand.IsBust() {
+			log.Info("Over 21, bust")
+			sendAction(conn, messages.BUST_MSG, room)
+			break
 		}
 
 		// Read action
@@ -136,15 +143,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 		room.Log.Printf("%s's turn, buy in: %d", currPlayer.Name, currPlayer.BuyIn)
 		currConn = *room.GetCurrPlayerConn()
 
-		// Check for Blackjack
-		if currPlayer.Hand.IsBlackjack {
-			room.Log.Printf("Hand is %v", currPlayer.Hand.Cards)
-			room.Log.Info("Blackjack!")
-			sendPlayer(currConn, messages.BLACKJACK_MSG, *room)
-		} else {
-			room.Log.Printf("Hit or Stand")
-			playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log, *room)
-		}
+		playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log, *room)
 
 		room.ChangePlayer()
 		room.Log.Info(DIVIDER)
@@ -173,6 +172,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	}
 
 	clearHands(players)
+	time.Sleep(3 * time.Second)
 }
 
 type PlayerDetails struct {
