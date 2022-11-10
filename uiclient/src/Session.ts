@@ -90,11 +90,28 @@ export default class Session {
           case "PlayerHand":
             this.handlePlayerHandMessages(message);
             break;
+          case "HandState":
+            this.handleHandStateMessages(message);
+            break;
           default:
             console.log("Message type not recognized");
             break;
         }
     });
+  }
+
+  handleHandStateMessages(message: Message){
+    switch (message.message) {
+      case "Bust":
+        console.log("Bust");
+        break;
+      case "Blackjack":
+        console.log("Blackjack");
+        break;
+      default:
+        console.log("Hand state message not recognized");
+        break;
+    }
   }
 
   handlePlayerHandMessages(message: Message){
