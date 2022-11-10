@@ -38,16 +38,23 @@
 
   <p>Name is {$name}, buy in: {$buyin}</p>
   <p>Dealer's hand:</p>
-  {#each $dealerHandStore as dealerCard}
-    <p>{dealerCard.ValueStr} {dealerCard.Suit}</p>
-	{/each}
+  <div>
+    {#each $dealerHandStore as dealerCard}
+      <p class="inline-block">{dealerCard.ValueStr} {dealerCard.Suit} | </p>
+    {/each}
+  </div>
 
   <p>Player's hand:</p>
-  {#each $playerHandStore as playerCard}
-    <p> {playerCard.ValueStr} {playerCard.Suit}</p>
-	{/each}
+  <div>
+    {#each $playerHandStore as playerCard}
+      <p class="inline-block">{playerCard.ValueStr} {playerCard.Suit} | </p>
+    {/each}
+  </div>
 
 </main>
 
 <style>
+  .inline-block {
+    display: inline-block;
+  }
 </style>

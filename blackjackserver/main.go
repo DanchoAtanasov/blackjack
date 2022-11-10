@@ -26,15 +26,15 @@ func getEnv(key, fallback string) string {
 
 var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
 
-type senderFunc func(net.Conn, string)
+type senderFunc func(net.Conn, string, server.Room)
 type readerFunc func(net.Conn, models.Hand) string
 
-func sendPlayer(conn net.Conn, message string) {
+func sendPlayer(conn net.Conn, message string, room server.Room) {
 	server.SendData(conn, message)
 }
 
-func sendDealer(conn net.Conn, message string) {
-	// Do nothing, the dealer is in this server
+func sendDealer(conn net.Conn, message string, room server.Room) {
+	room.SendAll(message)
 }
 
 func readPlayerAction(conn net.Conn, hand models.Hand) string {
@@ -80,6 +80,7 @@ func playTurn(
 	readAction readerFunc,
 	sendAction senderFunc,
 	log *logrus.Logger,
+	room server.Room,
 ) {
 	for {
 		log.Printf("%s's hand is %v", player.Name, player.Hand.Cards)
@@ -87,12 +88,16 @@ func playTurn(
 
 		if player.Hand.IsBust() {
 			log.Info("Over 21, bust")
-			sendAction(conn, messages.BUST_MSG)
+			sendAction(conn, messages.BUST_MSG, room)
 			break
 		}
 
 		// Send current hand
-		sendAction(conn, messages.PlayerHandMessage(player.Hand))
+		if player.Name == "Dealer" {
+			sendAction(conn, messages.DealerHandMessage(player.Hand), room)
+		} else {
+			sendAction(conn, messages.PlayerHandMessage(player.Hand), room)
+		}
 
 		// Read action
 		input := readAction(conn, player.Hand)
@@ -135,10 +140,10 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 		if currPlayer.Hand.IsBlackjack {
 			room.Log.Printf("Hand is %v", currPlayer.Hand.Cards)
 			room.Log.Info("Blackjack!")
-			sendPlayer(currConn, messages.BLACKJACK_MSG)
+			sendPlayer(currConn, messages.BLACKJACK_MSG, *room)
 		} else {
 			room.Log.Printf("Hit or Stand")
-			playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log)
+			playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log, *room)
 		}
 
 		room.ChangePlayer()
@@ -146,7 +151,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	}
 
 	// Dealer's turn
-	playTurn(dealer, deck, currConn, readDealerAction, sendDealer, room.Log)
+	playTurn(dealer, deck, currConn, readDealerAction, sendDealer, room.Log, *room)
 	room.Log.Info(DIVIDER)
 
 	for i := range players {
