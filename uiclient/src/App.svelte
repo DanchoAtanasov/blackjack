@@ -63,12 +63,14 @@
   {/if}
 
   <p>Name is {$name}, buy in: {$buyin}</p>
-  <p>Dealer's hand:</p>
   <div>
-    {#each $dealerHandStore.cards as dealerCard}
-      <img alt="card" class="playing-card" src={getCardAsset(dealerCard.ValueStr, dealerCard.Suit)} />
-    {/each}
-    <p>Sum: {$dealerHandStore.sum}</p>
+    {#if $dealerHandStore !== undefined}
+      <p>Dealer's hand:</p>
+      {#each $dealerHandStore.cards as dealerCard}
+        <img alt="card" class="playing-card" src={getCardAsset(dealerCard.ValueStr, dealerCard.Suit)} />
+      {/each}
+      <p>Sum: {$dealerHandStore.sum}</p>
+    {/if}
   </div>
 
   {#each $playersStore.values as player}

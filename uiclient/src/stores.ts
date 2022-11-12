@@ -20,13 +20,7 @@ export type Player = {
 export const name = writable('');
 export const buyin = writable(0);
 
-export const dealerHandStore = writable<Hand>({
-    cards: [{
-        ValueStr: "",
-        Suit: "",
-    }],
-    sum: 0,
-});
+export const dealerHandStore = writable<Hand>();
 
 type Players = { [name: string]: Player };
 
