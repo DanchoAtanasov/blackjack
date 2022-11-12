@@ -35,12 +35,6 @@
     <HitButton on:hit={sendHit}/>
     <StandButton on:stand={sendStand}/>
   {/if}
-  <p>All players:</p>
-  <div>
-    {#each $playersStore as player}
-      {player}
-    {/each}
-  </div>
 
   <p>Name is {$name}, buy in: {$buyin}</p>
   <p>Dealer's hand:</p>
@@ -51,13 +45,16 @@
     <p>Sum: {$dealerHandStore.sum}</p>
   </div>
 
-  <p>Player's hand:</p>
-  <div>
-    {#each $playerHandStore.cards as playerCard}
-      <p class="inline-block">{playerCard.ValueStr} {playerCard.Suit} | </p>
-    {/each}
-    <p>Sum: {$playerHandStore.sum}</p>
-  </div>
+  <p>{$playersStore.length}</p>
+  {#each $playersStore as player}
+    <p>{player}'s hand:</p>
+    <div>
+      {#each $playerHandStore.cards as playerCard}
+        <p class="inline-block">{playerCard.ValueStr} {playerCard.Suit} | </p>
+      {/each}
+      <p>Sum: {$playerHandStore.sum}</p>
+    </div>
+  {/each}
 
 </main>
 

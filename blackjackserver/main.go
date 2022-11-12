@@ -219,8 +219,8 @@ func getPlayerDetails(conn net.Conn) PlayerDetails {
 
 func getPlayerNames(players []models.Player) []string {
 	playerNames := make([]string, len(players))
-	for _, player := range players {
-		playerNames = append(playerNames, player.Name)
+	for i, player := range players {
+		playerNames[i] = player.Name
 	}
 	return playerNames
 }
@@ -244,6 +244,8 @@ func playRoom(room *server.Room, server2 *server.Server) {
 	}
 
 	room.Log.Info("Lets play!")
+	fmt.Println(len(players))
+	fmt.Println(messages.LIST_PLAYERS_MSG(getPlayerNames(players)))
 	room.SendAll(messages.START_MSG)
 	room.SendAll(messages.LIST_PLAYERS_MSG(getPlayerNames(players)))
 
