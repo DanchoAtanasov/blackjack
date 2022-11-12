@@ -1,7 +1,6 @@
-import { name, buyin, dealerHandStore, playerHandStore, playersStore } from './stores'
+import { name, buyin, dealerHandStore, playersStore } from './stores'
 import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
-import { v4 as uuidv4 } from 'uuid';
 
 
 const API_SERVER_URL = "http://localhost:3333/play"
@@ -55,6 +54,7 @@ export default class Session {
   }
 
   isActive(): boolean {
+    console.log('checking active');
     console.log(this.active);
     return this.active
   }
@@ -116,7 +116,7 @@ export default class Session {
 
   handleListPlayersMessage(message: Message){
     var players: Player[] = JSON.parse(message.message);
-    console.log(players);
+    // console.log(players);
     players.forEach(player => {
       if (player.Hand.cards === null) {
         player.Hand.cards = []; 

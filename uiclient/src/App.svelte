@@ -8,7 +8,7 @@
 
   var session = new Session();
 
-  var active = false
+  var active = false;
 
   function handleStartGame(event) {
     active = true;
@@ -51,35 +51,35 @@
 <main>
   <h1>Welcome to Blackjack</h1>
 
-  <div class="card">
+  {#if !active}
     <PlayButton on:start-game={handleStartGame}/>
-  </div>
-  {#if active}
+
+  {:else}
+    <p>Name is {$name}, buy in: {$buyin}</p>
+    <div>
+      {#if $dealerHandStore !== undefined}
+        <p>Dealer's hand:</p>
+        {#each $dealerHandStore.cards as dealerCard}
+          <img alt="card" class="playing-card" src={getCardAsset(dealerCard.ValueStr, dealerCard.Suit)} />
+        {/each}
+        <p>Sum: {$dealerHandStore.sum}</p>
+      {/if}
+    </div>
+
+    {#each $playersStore.values as player}
+      <p>{player.Name}'s hand:</p>
+      <div>
+        {#each player.Hand.cards as playerCard}
+          <img alt="card" class="playing-card" src={getCardAsset(playerCard.ValueStr, playerCard.Suit)} />
+        {/each}
+        <p>Sum: {player.Hand.sum}</p>
+      </div>
+    {/each}
+
     <HitButton on:hit={sendHit}/>
     <StandButton on:stand={sendStand}/>
+
   {/if}
-
-  <p>Name is {$name}, buy in: {$buyin}</p>
-  <div>
-    {#if $dealerHandStore !== undefined}
-      <p>Dealer's hand:</p>
-      {#each $dealerHandStore.cards as dealerCard}
-        <img alt="card" class="playing-card" src={getCardAsset(dealerCard.ValueStr, dealerCard.Suit)} />
-      {/each}
-      <p>Sum: {$dealerHandStore.sum}</p>
-    {/if}
-  </div>
-
-  {#each $playersStore.values as player}
-    <p>{player.Name}'s hand:</p>
-    <div>
-      {#each player.Hand.cards as playerCard}
-        <img alt="card" class="playing-card" src={getCardAsset(playerCard.ValueStr, playerCard.Suit)} />
-      {/each}
-      <p>Sum: {player.Hand.sum}</p>
-    </div>
-  {/each}
-
 </main>
 
 <style>
