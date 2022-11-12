@@ -27,3 +27,5 @@ export const playerHandStore = writable<Hand>({
     }],
     sum: 0,
 });
+
+export const playersStore = writable<string[]>([]);

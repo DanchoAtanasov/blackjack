@@ -71,15 +71,23 @@ func DealerHandMessage(hand models.Hand) string {
 	return makeJsonMessage("DealerHand", hand.ToJson())
 }
 
+type listPlayersFunc func([]string) string
+
+func listPlayers(players []string) string {
+	playerMessageBytes, _ := json.Marshal(players)
+	return makeJsonMessage("ListPlayers", string(playerMessageBytes))
+}
+
 // TODO: Add decode for dealer hand message
 
 var (
-	START_MSG     string = gameStart() // {"type":"Game","message":"Start"}
-	OVER_MSG      string = gameOver()  // {"type":"Game","message":"Over"}
-	HIT_MSG       string = hit()       // {"type":"PlayerAction","message":"Hit"}
-	STAND_MSG     string = stand()     // {"type":"PlayerAction","message":"Stand"}
-	BUST_MSG      string = bust()      // {"type":"HandState","message":"Bust"}
-	BLACKJACK_MSG string = blackjack() // {"type":"HandState","message":"Blackjack"}
+	START_MSG        string          = gameStart() // {"type":"Game","message":"Start"}
+	OVER_MSG         string          = gameOver()  // {"type":"Game","message":"Over"}
+	HIT_MSG          string          = hit()       // {"type":"PlayerAction","message":"Hit"}
+	STAND_MSG        string          = stand()     // {"type":"PlayerAction","message":"Stand"}
+	BUST_MSG         string          = bust()      // {"type":"HandState","message":"Bust"}
+	BLACKJACK_MSG    string          = blackjack() // {"type":"HandState","message":"Blackjack"}
+	LIST_PLAYERS_MSG listPlayersFunc = listPlayers // {"type":"ListPlayers","message":"[]"}
 	// dealer hand
 	// player hand
 )

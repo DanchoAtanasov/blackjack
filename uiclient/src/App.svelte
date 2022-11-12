@@ -2,7 +2,7 @@
   import PlayButton from './lib/PlayButton.svelte';
   import HitButton from './lib/HitButton.svelte';
   import StandButton from './lib/StandButton.svelte';
-  import { name, buyin, dealerHandStore, playerHandStore } from './stores'
+  import { name, buyin, dealerHandStore, playerHandStore, playersStore } from './stores'
 
   import Session from './Session';
 
@@ -35,6 +35,12 @@
     <HitButton on:hit={sendHit}/>
     <StandButton on:stand={sendStand}/>
   {/if}
+  <p>All players:</p>
+  <div>
+    {#each $playersStore as player}
+      {player}
+    {/each}
+  </div>
 
   <p>Name is {$name}, buy in: {$buyin}</p>
   <p>Dealer's hand:</p>

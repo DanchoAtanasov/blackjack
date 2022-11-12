@@ -217,6 +217,14 @@ func getPlayerDetails(conn net.Conn) PlayerDetails {
 	return fetchPlayerDetails(token.Token)
 }
 
+func getPlayerNames(players []models.Player) []string {
+	playerNames := make([]string, len(players))
+	for _, player := range players {
+		playerNames = append(playerNames, player.Name)
+	}
+	return playerNames
+}
+
 func playRoom(room *server.Room, server2 *server.Server) {
 	room.Log.Info("Getting a new shuffled deck of cards")
 	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe)
@@ -237,6 +245,7 @@ func playRoom(room *server.Room, server2 *server.Server) {
 
 	room.Log.Info("Lets play!")
 	room.SendAll(messages.START_MSG)
+	room.SendAll(messages.LIST_PLAYERS_MSG(getPlayerNames(players)))
 
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		room.Log.Printf("----------Round %d----------", round+1)

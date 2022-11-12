@@ -1,4 +1,4 @@
-import { name, buyin, dealerHandStore, playerHandStore } from './stores'
+import { name, buyin, dealerHandStore, playerHandStore, playersStore } from './stores'
 import { get } from 'svelte/store'
 import type { Hand } from './stores';
 import { v4 as uuidv4 } from 'uuid';
@@ -90,6 +90,9 @@ export default class Session {
           case "HandState":
             this.handleHandStateMessages(message);
             break;
+          case "ListPlayers":
+            this.handleListPlayersMessage(message);
+            break;
           default:
             console.log("Message type not recognized");
             break;
@@ -109,6 +112,11 @@ export default class Session {
         console.log("Hand state message not recognized");
         break;
     }
+  }
+
+  handleListPlayersMessage(message: Message){
+    var players: string[] = JSON.parse(message.message);
+    playersStore.set(players);
   }
 
   handlePlayerHandMessages(message: Message){
