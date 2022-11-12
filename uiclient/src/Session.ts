@@ -1,6 +1,6 @@
 import { name, buyin, dealerHandStore, playerHandStore, playersStore } from './stores'
 import { get } from 'svelte/store'
-import type { Hand } from './stores';
+import type { Player, Hand } from './stores';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -115,13 +115,16 @@ export default class Session {
   }
 
   handleListPlayersMessage(message: Message){
-    var players: string[] = JSON.parse(message.message);
-    playersStore.set(players);
+    var players: Player[] = JSON.parse(message.message);
+    console.log(players);
+    players.forEach(player => {
+      playersStore.set(player.Name, player);
+    });
   }
 
   handlePlayerHandMessages(message: Message){
-    var playerHand: Hand = JSON.parse(message.message);
-    playerHandStore.set(playerHand);
+    var playerHandMessage: Player = JSON.parse(message.message);
+    playerHandStore.set(playerHandMessage.Hand);
   }
 
   handleDealerHandMessages(message: Message){

@@ -89,9 +89,9 @@ func playTurn(
 
 		// Send current hand
 		if player.Name == "Dealer" {
-			sendAction(conn, messages.DealerHandMessage(player.Hand), room)
+			sendAction(conn, messages.DEALER_HAND_MSG(*player), room)
 		} else {
-			sendAction(conn, messages.PlayerHandMessage(player.Hand), room)
+			sendAction(conn, messages.PLAYER_HAND_MSG(*player), room)
 		}
 
 		if player.Hand.IsBlackjack {
@@ -134,7 +134,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	}
 
 	room.Log.Printf("Dealer's hand: %v", dealer.Hand.Cards)
-	room.SendAll(messages.DealerHandMessage(dealer.Hand))
+	room.SendAll(messages.DEALER_HAND_MSG(*dealer))
 
 	currConn := *room.GetCurrPlayerConn()
 	// Players' turn
@@ -172,7 +172,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	}
 
 	clearHands(players)
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
 }
 
 type PlayerDetails struct {
@@ -217,14 +217,6 @@ func getPlayerDetails(conn net.Conn) PlayerDetails {
 	return fetchPlayerDetails(token.Token)
 }
 
-func getPlayerNames(players []models.Player) []string {
-	playerNames := make([]string, len(players))
-	for i, player := range players {
-		playerNames[i] = player.Name
-	}
-	return playerNames
-}
-
 func playRoom(room *server.Room, server2 *server.Server) {
 	room.Log.Info("Getting a new shuffled deck of cards")
 	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe)
@@ -244,10 +236,8 @@ func playRoom(room *server.Room, server2 *server.Server) {
 	}
 
 	room.Log.Info("Lets play!")
-	fmt.Println(len(players))
-	fmt.Println(messages.LIST_PLAYERS_MSG(getPlayerNames(players)))
 	room.SendAll(messages.START_MSG)
-	room.SendAll(messages.LIST_PLAYERS_MSG(getPlayerNames(players)))
+	room.SendAll(messages.LIST_PLAYERS_MSG(players))
 
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		room.Log.Printf("----------Round %d----------", round+1)

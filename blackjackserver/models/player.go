@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type winOrLose interface {
 	Win()
 	Lose()
@@ -18,4 +20,9 @@ func (player *Player) Win() {
 
 func (player *Player) Lose() {
 	player.BuyIn -= player.CurrentBet
+}
+
+func (player *Player) ToJson() string {
+	result, _ := json.Marshal(*player)
+	return string(result)
 }
