@@ -10,7 +10,7 @@ COPY . .
 RUN make build
 
 ########################################################
-FROM alpine:latest
+FROM alpine:3.16
 
 RUN apk --no-cache add ca-certificates libc6-compat 
 
