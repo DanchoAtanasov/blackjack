@@ -1,5 +1,6 @@
 import { name, buyin, dealerHandStore, playerHandStore } from './stores'
 import { get } from 'svelte/store'
+import type { Hand } from './stores';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -24,10 +25,6 @@ type Message = {
   message: string,
 }
 
-type Hand = {
-  ValueStr: string,
-  Suit: string,
-}[];
 
 export default class Session {
   private socket: WebSocket;
@@ -115,13 +112,12 @@ export default class Session {
   }
 
   handlePlayerHandMessages(message: Message){
-    
-    var playerHand: Hand = JSON.parse(message.message).cards;
+    var playerHand: Hand = JSON.parse(message.message);
     playerHandStore.set(playerHand);
   }
 
   handleDealerHandMessages(message: Message){
-    var dealerHand: Hand = JSON.parse(message.message).cards;
+    var dealerHand: Hand = JSON.parse(message.message);
     dealerHandStore.set(dealerHand);
   }
 
