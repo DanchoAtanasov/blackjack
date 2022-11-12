@@ -27,11 +27,9 @@ type Message = {
 
 export default class Session {
   private socket: WebSocket;
-  private active: boolean;
 
   constructor() {
     this.socket = undefined;
-    this.active = false;
   }
 
   async connect() {
@@ -48,15 +46,8 @@ export default class Session {
     });
 
     this.addMessageListeners();
-    this.active = true;
     console.log(this.socket);
     
-  }
-
-  isActive(): boolean {
-    console.log('checking active');
-    console.log(this.active);
-    return this.active
   }
 
   sendHit() {
@@ -142,7 +133,6 @@ export default class Session {
         break;
       case "Over":
         console.log("Game over");
-        this.active = false
         break;
       default:
         console.log("Game message not recognized");
