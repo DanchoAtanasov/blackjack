@@ -2,7 +2,7 @@
   import PlayButton from './lib/PlayButton.svelte';
   import HitButton from './lib/HitButton.svelte';
   import StandButton from './lib/StandButton.svelte';
-  import { name, buyin, dealerHandStore, playerHandStore, playersStore } from './stores'
+  import { name, buyin, dealerHandStore, playersStore } from './stores'
 
   import Session from './Session';
 
@@ -23,6 +23,32 @@
     session.sendStand();
   }
 
+  function getCardAsset(value, suit) {
+    // TODO Improve code quality
+    console.log(value, suit);
+    switch (value) {
+      case 'J':
+        value = 'jack'
+        break;
+      case 'Q':
+        value = 'queen'
+        break;
+      case 'K':
+        value = 'king'
+        break;
+      case 'A':
+        value = 'ace'
+        break;
+    }
+
+    var assetPath = `./assets/svg-cards/${value}_of_${suit.toLowerCase()}.svg`;
+    console.log(assetPath);
+    const cardAsset = new URL(assetPath, import.meta.url).href
+    console.log(cardAsset);
+
+    return cardAsset;
+  }
+
 </script>
 
 <main>
@@ -40,7 +66,7 @@
   <p>Dealer's hand:</p>
   <div>
     {#each $dealerHandStore.cards as dealerCard}
-      <p class="inline-block">{dealerCard.ValueStr} {dealerCard.Suit} | </p> <p></p>
+      <img alt="card" class="playing-card" src={getCardAsset(dealerCard.ValueStr, dealerCard.Suit)} />
     {/each}
     <p>Sum: {$dealerHandStore.sum}</p>
   </div>
@@ -49,7 +75,7 @@
     <p>{player.Name}'s hand:</p>
     <div>
       {#each player.Hand.cards as playerCard}
-        <p class="inline-block">{playerCard.ValueStr} {playerCard.Suit} | </p>
+        <img alt="card" class="playing-card" src={getCardAsset(playerCard.ValueStr, playerCard.Suit)} />
       {/each}
       <p>Sum: {player.Hand.sum}</p>
     </div>
@@ -61,6 +87,11 @@
   .inline-block {
     display: inline-block;
     /* color: #003806 */
+  }
+
+  .playing-card {
+    width: 75px;
+    height: 150px;
   }
 
 </style>
