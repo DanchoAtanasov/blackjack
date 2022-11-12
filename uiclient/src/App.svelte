@@ -24,8 +24,7 @@
   }
 
   function getCardAsset(value, suit) {
-    // TODO Improve code quality
-    console.log(value, suit);
+    // TODO fix asset name mismatch
     switch (value) {
       case 'J':
         value = 'jack'
@@ -42,9 +41,7 @@
     }
 
     var assetPath = `./assets/svg-cards/${value}_of_${suit.toLowerCase()}.svg`;
-    console.log(assetPath);
     const cardAsset = new URL(assetPath, import.meta.url).href
-    console.log(cardAsset);
 
     return cardAsset;
   }
