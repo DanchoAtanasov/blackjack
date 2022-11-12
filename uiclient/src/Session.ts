@@ -118,13 +118,16 @@ export default class Session {
     var players: Player[] = JSON.parse(message.message);
     console.log(players);
     players.forEach(player => {
+      if (player.Hand.cards === null) {
+        player.Hand.cards = []; 
+      }
       playersStore.set(player.Name, player);
     });
   }
 
   handlePlayerHandMessages(message: Message){
-    var playerHandMessage: Player = JSON.parse(message.message);
-    playerHandStore.set(playerHandMessage.Hand);
+    var player: Player = JSON.parse(message.message);
+    playersStore.set(player.Name, player)
   }
 
   handleDealerHandMessages(message: Message){

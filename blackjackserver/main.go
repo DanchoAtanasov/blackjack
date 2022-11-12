@@ -54,6 +54,7 @@ func readDealerAction(conn net.Conn, hand models.Hand) string {
 	if hand.Sum > 17 {
 		return messages.STAND_MSG
 	}
+	// Dealer must hit a soft 17
 	if hand.Sum == 17 && hand.NumAces <= 0 {
 		return messages.STAND_MSG
 	}
@@ -91,7 +92,7 @@ func playTurn(
 		if player.Name == "Dealer" {
 			sendAction(conn, messages.DEALER_HAND_MSG(*player), room)
 		} else {
-			sendAction(conn, messages.PLAYER_HAND_MSG(*player), room)
+			room.SendAll(messages.PLAYER_HAND_MSG(*player))
 		}
 
 		if player.Hand.IsBlackjack {
@@ -134,6 +135,7 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 	}
 
 	room.Log.Printf("Dealer's hand: %v", dealer.Hand.Cards)
+	room.SendAll(messages.LIST_PLAYERS_MSG(players))
 	room.SendAll(messages.DEALER_HAND_MSG(*dealer))
 
 	currConn := *room.GetCurrPlayerConn()
@@ -232,12 +234,16 @@ func playRoom(room *server.Room, server2 *server.Server) {
 			Name:       pd.Name,
 			BuyIn:      pd.BuyIn,
 			CurrentBet: settings.CurrBet, // TODO: include this in the player details
+			// NOTE: since Hand is empty when JSON serialised it will be sent a null
+			// so it's handled by the frontend. Maybe change the serialization by
+			// making a custom serializer or instantiating the hand beforehand, pun intended
 		})
 	}
 
+	fmt.Println(players)
 	room.Log.Info("Lets play!")
 	room.SendAll(messages.START_MSG)
-	room.SendAll(messages.LIST_PLAYERS_MSG(players))
+	// room.SendAll(messages.LIST_PLAYERS_MSG(players))
 
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		room.Log.Printf("----------Round %d----------", round+1)

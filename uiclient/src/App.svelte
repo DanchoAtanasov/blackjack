@@ -48,10 +48,10 @@
   {#each $playersStore.values as player}
     <p>{player.Name}'s hand:</p>
     <div>
-      {#each $playerHandStore.cards as playerCard}
+      {#each player.Hand.cards as playerCard}
         <p class="inline-block">{playerCard.ValueStr} {playerCard.Suit} | </p>
       {/each}
-      <p>Sum: {$playerHandStore.sum}</p>
+      <p>Sum: {player.Hand.sum}</p>
     </div>
   {/each}
 
