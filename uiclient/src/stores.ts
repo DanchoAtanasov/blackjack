@@ -17,8 +17,16 @@ export type Player = {
 	CurrentBet: number,
 }
 
-export const name = writable('');
+export type NewPlayerRequest = {
+  Name: string,
+  BuyIn: number,
+}
+
+export const currPlayerName = writable('');
 export const buyin = writable(0);
+export const newPlayerRequestStore = writable<NewPlayerRequest>();
+export const isConnected = writable(false);
+export const hasGameStarted = writable(false);
 
 export const dealerHandStore = writable<Hand>();
 
@@ -36,6 +44,10 @@ function createMapStore(initial) {
     set(k: string, v: Player) {
       store.update(s => Object.assign({}, s, {[k]: v}))
     },
+    get(k: string) {
+      var p = s[k];
+      return p;
+    },
     remove(k: string) {
       store.update(s => {
         delete s[k];
@@ -46,6 +58,7 @@ function createMapStore(initial) {
   return {
     subscribe: results.subscribe,
     set: set,
+    get: get,
   }
 }
 
