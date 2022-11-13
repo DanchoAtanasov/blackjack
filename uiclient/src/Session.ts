@@ -1,4 +1,4 @@
-import { name, buyin, dealerHandStore, playersStore } from './stores'
+import { dealerHandStore, playersStore, isConnected, hasGameStarted, NewPlayerRequest, newPlayerRequestStore } from './stores'
 import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
 
@@ -7,11 +7,6 @@ const API_SERVER_URL = "http://localhost:3333/play"
 
 type Token = {
   Token: string,
-}
-
-type NewPlayerRequest = {
-  Name: string,
-  BuyIn: number,
 }
 
 type GameDetails = {
@@ -27,9 +22,13 @@ type Message = {
 
 export default class Session {
   private socket: WebSocket;
+  // public gameStarted: boolean;
+  // public connected: boolean;
 
   constructor() {
     this.socket = undefined;
+    // this.connected = false;
+    // this.gameStarted = false;
   }
 
   async connect() {
@@ -45,9 +44,9 @@ export default class Session {
       this.socket.send(JSON.stringify(token));
     });
 
+    isConnected.set(true);
+    console.log("Connected");
     this.addMessageListeners();
-    console.log(this.socket);
-    
   }
 
   sendHit() {
@@ -107,7 +106,6 @@ export default class Session {
 
   handleListPlayersMessage(message: Message){
     var players: Player[] = JSON.parse(message.message);
-    // console.log(players);
     players.forEach(player => {
       if (player.Hand.cards === null) {
         player.Hand.cards = []; 
@@ -118,7 +116,8 @@ export default class Session {
 
   handlePlayerHandMessages(message: Message){
     var player: Player = JSON.parse(message.message);
-    playersStore.set(player.Name, player)
+    console.log(player);
+    playersStore.set(player.Name, player);
   }
 
   handleDealerHandMessages(message: Message){
@@ -130,9 +129,11 @@ export default class Session {
     switch (message.message) {
       case "Start":
         console.log("Game started");
+        hasGameStarted.set(true);
         break;
       case "Over":
         console.log("Game over");
+        hasGameStarted.set(false);
         break;
       default:
         console.log("Game message not recognized");
@@ -142,10 +143,7 @@ export default class Session {
 
   async getGameDetails(): Promise<GameDetails> {
     console.log("Send player data to api server")
-    var newPlayerRequest: NewPlayerRequest = {
-      Name: get(name),
-      BuyIn: Number(get(buyin)),
-    }
+    const newPlayerRequest: NewPlayerRequest = get(newPlayerRequestStore);
 
     var gameDetails: GameDetails = await fetch(API_SERVER_URL, {
       method: "POST",
@@ -157,5 +155,3 @@ export default class Session {
     return gameDetails
   }
 }
-
-name.subscribe(newName => console.log("name change"))

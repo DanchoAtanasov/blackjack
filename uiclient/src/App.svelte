@@ -3,17 +3,14 @@
   import HitButton from './lib/HitButton.svelte';
   import StandButton from './lib/StandButton.svelte';
   import PlayerHand from './lib/PlayerHand.svelte';
-  import { name, buyin, dealerHandStore, playersStore } from './stores'
+  import { currPlayerName, playersStore, isConnected, hasGameStarted } from './stores';
 
   import Session from './Session';
   import DealerHand from './lib/DealerHand.svelte';
 
   var session = new Session();
 
-  var active = false;
-
   function handleStartGame(event) {
-    active = true;
     session.connect();
   }
 
@@ -30,11 +27,18 @@
 <main>
   <h1>Welcome to Blackjack</h1>
 
-  {#if !active}
+  {#if !$isConnected}
     <PlayButton on:start-game={handleStartGame}/>
-
+  {:else if !$hasGameStarted}
+    <p>Name is {$currPlayerName}, waiting for game to begin...</p>
   {:else}
-    <p>Name is {$name}, buy in: {$buyin}</p>
+    <p>Name is {$currPlayerName}, 
+      <!--TODO player data in store isn't quite ready by the time the game starts
+      reorder messages and remove the if check -->
+      {#if $playersStore.get($currPlayerName)}
+      buy in: {$playersStore.get($currPlayerName).BuyIn}
+      {/if}
+    </p>
     <DealerHand></DealerHand>
     <PlayerHand></PlayerHand>
 
