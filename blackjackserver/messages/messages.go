@@ -58,15 +58,7 @@ func gameStart() string {
 type handMessageFunc func(models.Player) string
 
 func playerHandMessage(player models.Player) string {
-	type testMsg struct {
-		Name string
-		Hand models.Hand
-	}
-	playerHand := testMsg{
-		Name: player.Name,
-		Hand: player.Hand,
-	}
-	messageBytes, _ := json.Marshal(playerHand)
+	messageBytes, _ := json.Marshal(player)
 	return makeJsonMessage("PlayerHand", string(messageBytes))
 }
 
