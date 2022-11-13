@@ -1,27 +1,24 @@
 
-<script>
+<script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { name, buyin } from '../stores';
+  import { currPlayerName, newPlayerRequestStore } from '../stores';
 
   const dispatch = createEventDispatcher();
 
+  // var nameInput: string, buyinInput: string;
   var nameInput, buyinInput;
 
-  function startGame() {
-    dispatch('start-game', {
-      name: name,
-      buyin: buyin,
+  function play() {
+    currPlayerName.set(nameInput);
+
+    newPlayerRequestStore.set({
+      Name: nameInput,
+      BuyIn: Number(buyinInput),
     });
+
+    dispatch('start-game', {});
   }
 
-  function putInStore() {
-    name.set(nameInput);
-    buyin.set(buyinInput);
-    startGame();
-  }
-
-  const play = async () => {
-  }
 </script>
 
 
@@ -29,7 +26,7 @@
   <input type="text" bind:value={nameInput} placeholder="Name" />
   <input type="text" bind:value={buyinInput} placeholder="Buy In"/>
 </form>
-<button on:click={putInStore}>
+<button on:click={play}>
   Play
 </button>
   
