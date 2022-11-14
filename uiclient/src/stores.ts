@@ -20,6 +20,7 @@ export type Player = {
 export type NewPlayerRequest = {
   Name: string,
   BuyIn: number,
+  CurrBet: number,
 }
 
 export const currPlayerName = writable('');

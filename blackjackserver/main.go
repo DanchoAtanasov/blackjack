@@ -178,8 +178,9 @@ func play(deck *models.Deck, players []models.Player, room *server.Room) {
 }
 
 type PlayerDetails struct {
-	Name  string
-	BuyIn int
+	Name    string
+	BuyIn   int
+	CurrBet int
 }
 
 func fetchPlayerDetails(token string) PlayerDetails {
@@ -233,7 +234,7 @@ func playRoom(room *server.Room, server2 *server.Server) {
 		players = append(players, models.Player{
 			Name:       pd.Name,
 			BuyIn:      pd.BuyIn,
-			CurrentBet: settings.CurrBet, // TODO: include this in the player details
+			CurrentBet: pd.CurrBet,
 			// NOTE: since Hand is empty when JSON serialised it will be sent a null
 			// so it's handled by the frontend. Maybe change the serialization by
 			// making a custom serializer or instantiating the hand beforehand, pun intended

@@ -22,8 +22,9 @@ func getEnv(key, fallback string) string {
 var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
 
 type PlayerRequest struct {
-	Name  string
-	BuyIn int
+	Name    string
+	BuyIn   int
+	CurrBet int
 }
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +57,7 @@ func play(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("could not parse body")
 		return
 	}
-	fmt.Printf("got %s, %d\n", playerRequest.Name, playerRequest.BuyIn)
+	fmt.Printf("got %s, %d, %d\n", playerRequest.Name, playerRequest.BuyIn, playerRequest.CurrBet)
 	type BlackjackServerDetails struct {
 		GameServer string
 		Token      string

@@ -6,7 +6,7 @@
   const dispatch = createEventDispatcher();
 
   // var nameInput: string, buyinInput: string;
-  var nameInput, buyinInput;
+  var nameInput, buyinInput, currBetInput;
 
   function play() {
     currPlayerName.set(nameInput);
@@ -14,6 +14,7 @@
     newPlayerRequestStore.set({
       Name: nameInput,
       BuyIn: Number(buyinInput),
+      CurrBet: Number(currBetInput),
     });
 
     dispatch('start-game', {});
@@ -25,6 +26,7 @@
 <form class="content">
   <input type="text" bind:value={nameInput} placeholder="Name" />
   <input type="text" bind:value={buyinInput} placeholder="Buy In"/>
+  <input type="text" bind:value={currBetInput} placeholder="Current Bet"/>
 </form>
 <button on:click={play}>
   Play
