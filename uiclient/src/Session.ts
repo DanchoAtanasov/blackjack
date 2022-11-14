@@ -47,6 +47,11 @@ export default class Session {
       this.socket.send(JSON.stringify(token));
     });
 
+    this.socket.addEventListener('close', (event) => {
+      console.log("Connection closed by server.")
+      isGameOver.set(true);
+    });
+
     isConnected.set(true);
     console.log("Connected");
     this.addMessageListeners();
@@ -138,6 +143,7 @@ export default class Session {
         console.log("Game over");
         hasGameStarted.set(false);
         isGameOver.set(true);
+        this.socket.close();
         break;
       default:
         console.log("Game message not recognized");
