@@ -52,5 +52,4 @@
 </main>
 
 <style>
-  /* color: #003806 */
 </style>
