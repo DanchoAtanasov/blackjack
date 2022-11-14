@@ -28,6 +28,7 @@ export const buyin = writable(0);
 export const newPlayerRequestStore = writable<NewPlayerRequest>();
 export const isConnected = writable(false);
 export const hasGameStarted = writable(false);
+export const isGameOver = writable(false);
 
 export const dealerHandStore = writable<Hand>();
 

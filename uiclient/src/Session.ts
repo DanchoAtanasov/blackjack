@@ -1,4 +1,7 @@
-import { dealerHandStore, playersStore, isConnected, hasGameStarted, NewPlayerRequest, newPlayerRequestStore } from './stores'
+import { 
+  dealerHandStore, playersStore, isConnected, hasGameStarted, NewPlayerRequest,
+  newPlayerRequestStore, isGameOver,
+} from './stores'
 import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
 
@@ -134,6 +137,7 @@ export default class Session {
       case "Over":
         console.log("Game over");
         hasGameStarted.set(false);
+        isGameOver.set(true);
         break;
       default:
         console.log("Game message not recognized");

@@ -244,7 +244,6 @@ func playRoom(room *server.Room, server2 *server.Server) {
 	fmt.Println(players)
 	room.Log.Info("Lets play!")
 	room.SendAll(messages.START_MSG)
-	// room.SendAll(messages.LIST_PLAYERS_MSG(players))
 
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		room.Log.Printf("----------Round %d----------", round+1)
@@ -257,6 +256,7 @@ func playRoom(room *server.Room, server2 *server.Server) {
 	for i := range players {
 		room.Log.Printf("%s: %d", players[i].Name, players[i].BuyIn)
 	}
+	room.SendAll(messages.LIST_PLAYERS_MSG(players))
 
 	go saveResultToFile(players, room.Id)
 	room.SendAll(messages.OVER_MSG)

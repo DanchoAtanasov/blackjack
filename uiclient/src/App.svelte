@@ -3,7 +3,7 @@
   import HitButton from './lib/HitButton.svelte';
   import StandButton from './lib/StandButton.svelte';
   import PlayerHand from './lib/PlayerHand.svelte';
-  import { currPlayerName, playersStore, isConnected, hasGameStarted } from './stores';
+  import { currPlayerName, playersStore, isConnected, hasGameStarted, isGameOver } from './stores';
 
   import Session from './Session';
   import DealerHand from './lib/DealerHand.svelte';
@@ -29,8 +29,10 @@
 
   {#if !$isConnected}
     <PlayButton on:start-game={handleStartGame}/>
-  {:else if !$hasGameStarted}
+  {:else if !$hasGameStarted && !$isGameOver}
     <p>Name is {$currPlayerName}, waiting for game to begin...</p>
+  {:else if $isGameOver}
+    <p> Game is over, final buyin: {$playersStore.get($currPlayerName).BuyIn} </p>
   {:else}
     <p>Name is {$currPlayerName}, 
       <!--TODO player data in store isn't quite ready by the time the game starts
