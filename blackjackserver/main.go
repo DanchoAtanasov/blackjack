@@ -80,7 +80,6 @@ func playTurn(
 	sendAction senderFunc,
 	log *logrus.Logger,
 	room *server.Room,
-	disconnectedPlayers *[]string,
 ) {
 	for {
 		log.Printf("%s's hand is %v", player.Name, player.Hand.Cards)
@@ -94,8 +93,10 @@ func playTurn(
 		}
 
 		if player.Hand.IsBlackjack {
-			room.Log.Info("Blackjack!")
-			sendAction(conn, messages.BLACKJACK_MSG, *room)
+			if player.Name != "Dealer" {
+				room.Log.Info("Blackjack!")
+				sendAction(conn, messages.BLACKJACK_MSG, *room)
+			}
 			break
 		}
 
@@ -112,35 +113,18 @@ func playTurn(
 		} else if input == "Out" {
 			fmt.Println("Removing disconnected player")
 			room.RemoveDisconnectedPlayer()
-			// *disconnectedPlayers = append(*disconnectedPlayers, player.Name)
 			break
 		}
 
 		player.Hand.AddCard(deck.DealCard())
 	}
+	fmt.Println(*player)
 }
 
 func clearHands(players []models.Player) {
 	for i := range players {
 		models.ClearHand(&players[i].Hand)
 	}
-}
-
-func removeDisconnectedPlayers(players []models.Player, disconnectedPlayersThisTurn []string) []models.Player {
-	var activePlayers []models.Player
-	fmt.Printf("disconnectedPlayersThisTurn: %v\n", disconnectedPlayersThisTurn)
-	for _, player := range players {
-		isActive := true
-		for _, disconnectedPlayerName := range disconnectedPlayersThisTurn {
-			if player.Name == disconnectedPlayerName {
-				isActive = false
-			}
-		}
-		if isActive {
-			activePlayers = append(activePlayers, player)
-		}
-	}
-	return activePlayers
 }
 
 func play(deck *models.Deck, room *server.Room) {
@@ -161,15 +145,14 @@ func play(deck *models.Deck, room *server.Room) {
 	room.SendAll(messages.LIST_PLAYERS_MSG(players))
 	room.SendAll(messages.DEALER_HAND_MSG(*dealer))
 
-	var disconnectedPlayersThisTurn []string
 	currConn := room.GetCurrPlayerConn().Conn
 	// Players' turn
 	for i := range players {
-		currPlayer := players[i]
+		currPlayer := &players[i]
 		room.Log.Printf("%s's turn, buy in: %d", currPlayer.Name, currPlayer.BuyIn)
 		currConn = room.GetCurrPlayerConn().Conn
 
-		playTurn(&currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log, room, &disconnectedPlayersThisTurn)
+		playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log, room)
 
 		room.ChangePlayer()
 
@@ -177,11 +160,12 @@ func play(deck *models.Deck, room *server.Room) {
 	}
 
 	// Dealer's turn
-	playTurn(dealer, deck, currConn, readDealerAction, sendDealer, room.Log, room, &disconnectedPlayersThisTurn)
+	playTurn(dealer, deck, currConn, readDealerAction, sendDealer, room.Log, room)
 	room.Log.Info(DIVIDER)
 
+	fmt.Println(players)
 	for i := range players {
-		currPlayer := players[i]
+		currPlayer := &players[i]
 		switch models.GetWinner(currPlayer.Hand, dealer.Hand) {
 		case 2:
 			room.Log.Printf("%s had Blackjack, gets 3x bet", currPlayer.Name)
@@ -199,7 +183,6 @@ func play(deck *models.Deck, room *server.Room) {
 	}
 
 	clearHands(players)
-	// *playersPtr = removeDisconnectedPlayers(players, disconnectedPlayersThisTurn)
 	time.Sleep(5 * time.Second)
 }
 
