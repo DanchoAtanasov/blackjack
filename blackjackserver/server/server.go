@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,13 +10,25 @@ import (
 	"os"
 	"sync"
 
+	"github.com/go-redis/redis"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	settings "blackjack/config"
+	"blackjack/models"
 )
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
+var REDIS_PORT string = getEnv("REDIS_PORT", "6379") // This about making int
 
 func ReadData(conn net.Conn) string {
 	// Returns empty string if read failed, EOF if connection was closed
@@ -39,16 +52,23 @@ func SendData(conn net.Conn, msg string) {
 	}
 }
 
+// Struct used to couple the player model and the connection to him
+type PlayerConn struct {
+	player models.Player
+	Conn   net.Conn
+}
+
 type Room struct {
-	connections []net.Conn
 	Log         *logrus.Logger
 	Id          string
+	playerConns []PlayerConn
 }
 
 func MakeRoom() *Room {
 	room := Room{}
 	room.Id = uuid.New().String()
 	room.Log = MakeLog(room.Id)
+	room.playerConns = make([]PlayerConn, 0, settings.RoomSize)
 
 	return &room
 }
@@ -68,34 +88,89 @@ func MakeLog(id string) *logrus.Logger {
 	return log
 }
 
-func (room *Room) GetCurrPlayerConn() *net.Conn {
-	return &room.connections[0]
+func (room *Room) GetCurrPlayerConn() *PlayerConn {
+	return &room.playerConns[0]
 }
 
 func (room *Room) RemoveDisconnectedPlayer() {
 	// TODO improve player diconnecting/rotating logic
 	// maybe couple the player and room objects better
-	room.connections = room.connections[1:]
+	room.playerConns = room.playerConns[1:]
 }
 
 func (room *Room) ChangePlayer() {
 	// Change players by popping from queue and appending
-	var currentConn net.Conn
-	currentConn, room.connections = room.connections[0], room.connections[1:]
-	room.connections = append(room.connections, currentConn)
+	var currentConn PlayerConn
+	currentConn, room.playerConns = room.playerConns[0], room.playerConns[1:]
+	room.playerConns = append(room.playerConns, currentConn)
 }
 
 func (room *Room) SendAll(msg string) {
-	for _, conn := range room.connections {
-		SendData(conn, msg)
+	for _, playerConnection := range room.playerConns {
+		SendData(playerConnection.Conn, msg)
 	}
+}
+
+func (room *Room) GetPlayers() []models.Player {
+	var players []models.Player
+	for i := 0; i < len(room.playerConns); i++ {
+		players = append(players, room.playerConns[i].player)
+	}
+	return players
 }
 
 type Server struct {
 	room               *Room
 	newConnectionMutex sync.Mutex
 	newConnectionCond  sync.Cond
-	connQueue          []net.Conn
+	connQueue          []PlayerConn
+}
+
+type PlayerDetails struct {
+	Name    string
+	BuyIn   int
+	CurrBet int
+}
+
+func fetchPlayerDetails(token string) PlayerDetails {
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", REDIS_HOST, REDIS_PORT),
+		Password: "",
+		DB:       0,
+	})
+
+	val, err := client.Get(token).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("got from redis %s\n", val)
+
+	var pd PlayerDetails
+	err = json.Unmarshal([]byte(val), &pd)
+	if err != nil {
+		fmt.Println("failed to unmarshal")
+	}
+
+	return pd
+}
+
+func getPlayerDetails(conn net.Conn) PlayerDetails {
+	type Token struct {
+		Token string
+	}
+	var token Token
+
+	// Ask client for token
+	msg := ReadData(conn)
+	fmt.Printf("Received %s", msg)
+	err := json.Unmarshal([]byte(msg), &token)
+	if err != nil {
+		fmt.Println("Failed to unmarshal")
+		// TODO: handle failure
+	}
+
+	fmt.Println(token)
+	return fetchPlayerDetails(token.Token)
 }
 
 func (server *Server) registerPlayer(conn *net.Conn) {
@@ -103,7 +178,25 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	defer server.newConnectionMutex.Unlock()
 	fmt.Println("Registering player")
 
-	server.connQueue = append(server.connQueue, *conn)
+	fmt.Println("Getting player details")
+	pd := getPlayerDetails(*conn)
+
+	newPlayer := models.Player{
+		Name:       pd.Name,
+		BuyIn:      pd.BuyIn,
+		CurrentBet: pd.CurrBet,
+		// NOTE: since Hand is empty when JSON serialised it will be sent a null
+		// so it's handled by the frontend. Maybe change the serialization by
+		// making a custom serializer or instantiating the hand beforehand, pun intended
+	}
+
+	playerConn := PlayerConn{
+		player: newPlayer,
+		Conn:   *conn,
+	}
+
+	server.connQueue = append(server.connQueue, playerConn)
+	fmt.Printf("Player %s registered.\n", playerConn.player.Name)
 	server.newConnectionCond.Signal()
 	// server.newConnectionCond.Broadcast() TODO maybe use broadcast?
 }
@@ -130,7 +223,7 @@ func (server *Server) WaitForPlayers() *Room {
 
 	fmt.Println("Wait is over!, queue len is ", len(server.connQueue))
 	room := MakeRoom()
-	room.connections = server.connQueue[:settings.RoomSize]
+	room.playerConns = server.connQueue[:settings.RoomSize]
 	server.connQueue = server.connQueue[settings.RoomSize:]
 
 	return room
@@ -144,7 +237,6 @@ func (server *Server) Serve() {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, _, _, err := ws.UpgradeHTTP(r, w)
 			if err != nil {
-				// handle error
 				fmt.Println("Upgrade error, ", err)
 			}
 

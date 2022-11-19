@@ -1,13 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"time"
 
-	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 
 	settings "blackjack/config"
@@ -17,15 +15,6 @@ import (
 )
 
 const DIVIDER string = "---------------------------------"
-
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
 
 type senderFunc func(net.Conn, string, server.Room)
 type readerFunc func(net.Conn, models.Hand) string
@@ -123,7 +112,7 @@ func playTurn(
 		} else if input == "Out" {
 			fmt.Println("Removing disconnected player")
 			room.RemoveDisconnectedPlayer()
-			*disconnectedPlayers = append(*disconnectedPlayers, player.Name)
+			// *disconnectedPlayers = append(*disconnectedPlayers, player.Name)
 			break
 		}
 
@@ -154,10 +143,12 @@ func removeDisconnectedPlayers(players []models.Player, disconnectedPlayersThisT
 	return activePlayers
 }
 
-func play(deck *models.Deck, playersPtr *[]models.Player, room *server.Room) {
+func play(deck *models.Deck, room *server.Room) {
 	dealer := &models.Player{Name: "Dealer"}
 
-	players := *playersPtr
+	// This makes a copy and differs from room's player objects
+	// Is this ok?
+	players := room.GetPlayers()
 	for i := range players {
 		players[i].Hand.AddCard(deck.DealCard())
 	}
@@ -171,16 +162,17 @@ func play(deck *models.Deck, playersPtr *[]models.Player, room *server.Room) {
 	room.SendAll(messages.DEALER_HAND_MSG(*dealer))
 
 	var disconnectedPlayersThisTurn []string
-	currConn := *room.GetCurrPlayerConn()
+	currConn := room.GetCurrPlayerConn().Conn
 	// Players' turn
 	for i := range players {
-		currPlayer := &players[i]
+		currPlayer := players[i]
 		room.Log.Printf("%s's turn, buy in: %d", currPlayer.Name, currPlayer.BuyIn)
-		currConn = *room.GetCurrPlayerConn()
+		currConn = room.GetCurrPlayerConn().Conn
 
-		playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log, room, &disconnectedPlayersThisTurn)
+		playTurn(&currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log, room, &disconnectedPlayersThisTurn)
 
 		room.ChangePlayer()
+
 		room.Log.Info(DIVIDER)
 	}
 
@@ -189,7 +181,7 @@ func play(deck *models.Deck, playersPtr *[]models.Player, room *server.Room) {
 	room.Log.Info(DIVIDER)
 
 	for i := range players {
-		currPlayer := &players[i]
+		currPlayer := players[i]
 		switch models.GetWinner(currPlayer.Hand, dealer.Hand) {
 		case 2:
 			room.Log.Printf("%s had Blackjack, gets 3x bet", currPlayer.Name)
@@ -207,7 +199,7 @@ func play(deck *models.Deck, playersPtr *[]models.Player, room *server.Room) {
 	}
 
 	clearHands(players)
-	*playersPtr = removeDisconnectedPlayers(players, disconnectedPlayersThisTurn)
+	// *playersPtr = removeDisconnectedPlayers(players, disconnectedPlayersThisTurn)
 	time.Sleep(5 * time.Second)
 }
 
@@ -217,83 +209,31 @@ type PlayerDetails struct {
 	CurrBet int
 }
 
-func fetchPlayerDetails(token string) PlayerDetails {
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:6379", REDIS_HOST),
-		Password: "",
-		DB:       0,
-	})
-
-	val, err := client.Get(token).Result()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("got from redis %s\n", val)
-
-	var pd PlayerDetails
-	err = json.Unmarshal([]byte(val), &pd)
-	if err != nil {
-		fmt.Println("failed to unmarshal")
-	}
-
-	return pd
-}
-
-func getPlayerDetails(conn net.Conn) PlayerDetails {
-	type Token struct {
-		Token string
-	}
-	var token Token
-	msg := server.ReadData(conn)
-	fmt.Printf("Received %s", msg)
-	err := json.Unmarshal([]byte(msg), &token)
-	if err != nil {
-		fmt.Println("Failed to unmarshal")
-	}
-	fmt.Println(token)
-	return fetchPlayerDetails(token.Token)
-}
-
-func playRoom(room *server.Room, server2 *server.Server) {
+func playRoom(room *server.Room) {
 	room.Log.Info("Getting a new shuffled deck of cards")
 	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe)
 
-	var players []models.Player
-	for i := 0; i < settings.RoomSize; i++ {
-		room.Log.Info("Getting player details")
-		currConn := room.GetCurrPlayerConn()
-		room.ChangePlayer()
-		pd := getPlayerDetails(*currConn)
-
-		players = append(players, models.Player{
-			Name:       pd.Name,
-			BuyIn:      pd.BuyIn,
-			CurrentBet: pd.CurrBet,
-			// NOTE: since Hand is empty when JSON serialised it will be sent a null
-			// so it's handled by the frontend. Maybe change the serialization by
-			// making a custom serializer or instantiating the hand beforehand, pun intended
-		})
-	}
-
-	fmt.Println(players)
 	room.Log.Info("Lets play!")
 	room.SendAll(messages.START_MSG)
 
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		room.Log.Printf("----------Round %d----------", round+1)
-		play(&deck, &players, room)
+
+		play(&deck, room)
+
 		deck = *models.ShuffleDeckIfLow(&deck, 150)
 	}
 
 	room.Log.Info(DIVIDER)
 	room.Log.Info("Final buy ins: ")
 	// TODO: Disconnected players winnings are not recorded
-	for i := range players {
-		room.Log.Printf("%s: %d", players[i].Name, players[i].BuyIn)
-	}
-	room.SendAll(messages.LIST_PLAYERS_MSG(players))
+	// TODO: readd this
+	// for i := range players {
+	// 	room.Log.Printf("%s: %d", players[i].Name, players[i].BuyIn)
+	// }
+	// room.SendAll(messages.LIST_PLAYERS_MSG(players))
 
-	go saveResultToFile(players, room.Id)
+	// go saveResultToFile(players, room.Id)
 	room.SendAll(messages.OVER_MSG)
 }
 
@@ -304,6 +244,6 @@ func main() {
 	go output.Serve()
 	for {
 		currRoom := output.WaitForPlayers()
-		go playRoom(currRoom, output)
+		go playRoom(currRoom)
 	}
 }
