@@ -1,7 +1,9 @@
 package server
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -16,13 +18,17 @@ import (
 )
 
 func ReadData(conn net.Conn) string {
+	// Returns empty string if read failed, EOF if connection was closed
 	msg, err := wsutil.ReadClientText(conn)
 	if err != nil {
-		fmt.Println("Read failed, ", err)
+		fmt.Printf("Read failed, %s\n", err)
+		if errors.Is(err, io.EOF) {
+			fmt.Println("Connection closed by client")
+			return "EOF"
+		}
 	}
 
 	msg_str := string(msg)
-	// fmt.Println("Received: ", msg_str)
 	return msg_str
 }
 
@@ -34,10 +40,9 @@ func SendData(conn net.Conn, msg string) {
 }
 
 type Room struct {
-	connections   []net.Conn
-	currentPlayer int
-	Log           *logrus.Logger
-	Id            string
+	connections []net.Conn
+	Log         *logrus.Logger
+	Id          string
 }
 
 func MakeRoom() *Room {
@@ -64,17 +69,24 @@ func MakeLog(id string) *logrus.Logger {
 }
 
 func (room *Room) GetCurrPlayerConn() *net.Conn {
-	return &room.connections[room.currentPlayer]
+	return &room.connections[0]
+}
+
+func (room *Room) RemoveDisconnectedPlayer() {
+	// TODO improve player diconnecting/rotating logic
+	// maybe couple the player and room objects better
+	room.connections = room.connections[1:]
 }
 
 func (room *Room) ChangePlayer() {
-	room.currentPlayer += 1
-	room.currentPlayer %= len(room.connections) // TODO if player disconnects
+	// Change players by popping from queue and appending
+	var currentConn net.Conn
+	currentConn, room.connections = room.connections[0], room.connections[1:]
+	room.connections = append(room.connections, currentConn)
 }
 
 func (room *Room) SendAll(msg string) {
 	for _, conn := range room.connections {
-		// fmt.Println("sending all ", msg)
 		SendData(conn, msg)
 	}
 }
