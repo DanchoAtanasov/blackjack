@@ -39,6 +39,14 @@ type Players = { [name: string]: Player };
 function createMapStore(initial) {
   const store = writable<Players>(initial);
   const set = (key: string, value: Player) => store.update(m => Object.assign({}, m, {[key]: value}));
+  const clear = () => {
+    store.update(players => {
+      Object.keys(players).forEach(playerName => {
+        delete players[playerName];
+      });
+      return players;
+    })
+  }
   const results = derived(store, s => ({
     keys: Object.keys(s),
     values: Object.values(s),
@@ -55,12 +63,14 @@ function createMapStore(initial) {
         delete s[k];
         return s;
       });
-    }
+    },
   }));
   return {
     subscribe: results.subscribe,
     set: set,
+    // This is actually svelte get
     get: get,
+    clear: clear,
   }
 }
 

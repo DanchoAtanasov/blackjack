@@ -114,6 +114,8 @@ export default class Session {
 
   handleListPlayersMessage(message: Message){
     var players: Player[] = JSON.parse(message.message);
+    // Remove disconnected players
+    playersStore.clear();
     players.forEach(player => {
       if (player.Hand.cards === null) {
         player.Hand.cards = []; 
