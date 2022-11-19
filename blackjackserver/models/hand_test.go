@@ -115,36 +115,57 @@ func TestHand(t *testing.T) {
 		handA.IsBlackjack = true
 		handB := Hand{}
 		result := GetWinner(handA, handB)
-		if result != 2 {
-			t.Errorf("GetWinner is %d but should be %d\n", result, 2)
+		expected := 2
+		if result != expected {
+			t.Errorf("GetWinner is %d but should be %d\n", result, expected)
 		}
 
 		handA = Hand{Sum: 15}
 		handB = Hand{Sum: 14}
 		result = GetWinner(handA, handB)
-		if result != 1 {
-			t.Errorf("GetWinner is %d but should be %d\n", result, 1)
+		expected = 1
+		if result != expected {
+			t.Errorf("GetWinner is %d but should be %d\n", result, expected)
 		}
 
 		handA = Hand{Sum: 13}
 		handB = Hand{Sum: 14}
 		result = GetWinner(handA, handB)
-		if result != -1 {
-			t.Errorf("GetWinner is %d but should be %d\n", result, -1)
+		expected = -1
+		if result != expected {
+			t.Errorf("GetWinner is %d but should be %d\n", result, expected)
 		}
 
 		handA = Hand{Sum: 22}
 		handB = Hand{Sum: 14}
 		result = GetWinner(handA, handB)
-		if result != -1 {
-			t.Errorf("GetWinner is %d but should be %d\n", result, -1)
+		expected = -1
+		if result != expected {
+			t.Errorf("GetWinner is %d but should be %d\n", result, expected)
 		}
 
 		handA = Hand{Sum: 15}
 		handB = Hand{Sum: 22}
 		result = GetWinner(handA, handB)
-		if result != 1 {
-			t.Errorf("GetWinner is %d but should be %d\n", result, 1)
+		expected = 1
+		if result != expected {
+			t.Errorf("GetWinner is %d but should be %d\n", result, expected)
+		}
+
+		handA = Hand{Sum: 17}
+		handB = Hand{Sum: 17}
+		result = GetWinner(handA, handB)
+		expected = 0
+		if result != expected {
+			t.Errorf("GetWinner is %d but should be %d\n", result, expected)
+		}
+
+		handA = Hand{Sum: 21, IsBlackjack: false}
+		handB = Hand{Sum: 21}
+		result = GetWinner(handA, handB)
+		expected = 0
+		if result != expected {
+			t.Errorf("GetWinner is %d but should be %d\n", result, expected)
 		}
 
 	})
