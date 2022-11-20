@@ -133,15 +133,18 @@ func calculateWinners(players []*models.Player, dealer models.Player, room serve
 }
 
 func playRound(deck *models.Deck, room *server.Room) {
-	dealer := &models.Player{Name: "Dealer", IsDealer: true}
+	// Ask who's playing
+	room.SendAll(messages.PLAYING_THIS_HAND_MSG)
+	room.ReadInMessages()
+
+	if room.IsEmpty() {
+		return
+	}
 
 	// Note: players is a slice of pointers as they're created in register and this way they can
 	// be updated from the game logic code
 	players := room.GetPlayers()
-
-	// Ask who's playing
-	room.SendAll(messages.PLAYING_THIS_HAND_MSG)
-	room.ReadInMessages()
+	dealer := &models.Player{Name: "Dealer", IsDealer: true}
 
 	for i := range players {
 		players[i].Hand.AddCard(deck.DealCard())

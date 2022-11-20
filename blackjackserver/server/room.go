@@ -71,14 +71,22 @@ func (room *Room) SendAll(msg string) {
 
 func (room *Room) ReadInMessages() {
 	for i := range room.playerConns {
+		currPlayer := room.playerConns[i].player
+
 		// TODO add retry
 		message := ReadData(room.playerConns[i].Conn)
+		if message == "EOF" {
+			fmt.Println("Player has disconnected")
+			currPlayer.Active = false
+			room.RemoveDisconnectedPlayer()
+			continue
+		}
+
 		response, err := messages.DecodePlayerInMessage(message)
 		if err != nil {
 			fmt.Printf("Wrong player in response msg: %e\n", err)
 		}
 
-		currPlayer := room.playerConns[i].player
 		if response.Playing {
 			currPlayer.Active = true
 			currPlayer.CurrentBet = response.CurrentBet

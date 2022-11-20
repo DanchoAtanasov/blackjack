@@ -19,9 +19,12 @@ func ReadData(conn net.Conn) string {
 	// Returns empty string if read failed, EOF if connection was closed
 	msg, err := wsutil.ReadClientText(conn)
 	if err != nil {
-		fmt.Printf("Read failed, %s\n", err)
+		fmt.Printf("Read failed, %s, %e\n", err, err)
 		if errors.Is(err, io.EOF) {
 			fmt.Println("Connection closed by client")
+			return "EOF"
+		} else if errors.Is(err, wsutil.ClosedError{Code: 1001}) {
+			fmt.Println("Connection closed by client, ws closed")
 			return "EOF"
 		}
 	}
