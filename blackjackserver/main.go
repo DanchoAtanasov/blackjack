@@ -58,7 +58,7 @@ func readDealerAction(conn net.Conn, hand models.Hand) string {
 	return messages.HIT_MSG
 }
 
-func saveResultToFile(players []models.Player, id string) {
+func saveResultToFile(players []*models.Player, id string) {
 	var outputString string
 	for i := range players {
 		outputString += fmt.Sprintf("%s: %d\n", players[i].Name, players[i].BuyIn)
@@ -121,16 +121,15 @@ func playTurn(
 	fmt.Println(*player)
 }
 
-func clearHands(players []models.Player) {
+func clearHands(players []*models.Player) {
 	for i := range players {
 		models.ClearHand(&players[i].Hand)
 	}
 }
 
-func calculateWinners(players []models.Player, dealer models.Player, room server.Room) {
-	fmt.Println(players)
+func calculateWinners(players []*models.Player, dealer models.Player, room server.Room) {
 	for i := range players {
-		currPlayer := &players[i]
+		currPlayer := players[i]
 		switch models.GetWinner(currPlayer.Hand, dealer.Hand) {
 		case 2:
 			room.Log.Printf("%s had Blackjack, gets 3x bet", currPlayer.Name)
@@ -145,14 +144,13 @@ func calculateWinners(players []models.Player, dealer models.Player, room server
 			room.Log.Info("Draw")
 		}
 	}
-	fmt.Println(players)
 }
 
 func playRound(deck *models.Deck, room *server.Room) {
 	dealer := &models.Player{Name: "Dealer"}
 
-	// This makes a copy and differs from room's player objects
-	// Is this ok?
+	// Note: players is a slice of pointers as they're created in register and this way they can
+	// be updated from the game logic code
 	players := room.GetPlayers()
 	for i := range players {
 		players[i].Hand.AddCard(deck.DealCard())
@@ -169,7 +167,7 @@ func playRound(deck *models.Deck, room *server.Room) {
 	currConn := room.GetCurrPlayerConn().Conn
 	// Players' turn
 	for i := range players {
-		currPlayer := &players[i]
+		currPlayer := players[i]
 		room.Log.Printf("%s's turn, buy in: %d", currPlayer.Name, currPlayer.BuyIn)
 		currConn = room.GetCurrPlayerConn().Conn
 
@@ -184,21 +182,10 @@ func playRound(deck *models.Deck, room *server.Room) {
 	playTurn(dealer, deck, currConn, readDealerAction, sendDealer, room.Log, room)
 	room.Log.Info(DIVIDER)
 
-	fmt.Println(players)
 	calculateWinners(players, *dealer, *room)
-	fmt.Println("After winnings")
-	fmt.Println(players)
 
 	clearHands(players)
-	fmt.Println("After clearing hands")
-	fmt.Println(players)
 	time.Sleep(settings.TimeBetweenRounds)
-}
-
-type PlayerDetails struct {
-	Name    string
-	BuyIn   int
-	CurrBet int
 }
 
 func playRoom(room *server.Room) {
@@ -219,13 +206,13 @@ func playRoom(room *server.Room) {
 	room.Log.Info(DIVIDER)
 	room.Log.Info("Final buy ins: ")
 	// TODO: Disconnected players winnings are not recorded
-	// TODO: readd this
-	// for i := range players {
-	// 	room.Log.Printf("%s: %d", players[i].Name, players[i].BuyIn)
-	// }
-	// room.SendAll(messages.LIST_PLAYERS_MSG(players))
+	players := room.GetPlayers()
+	for i := range players {
+		room.Log.Printf("%s: %d", players[i].Name, players[i].BuyIn)
+	}
+	room.SendAll(messages.LIST_PLAYERS_MSG(players))
 
-	// go saveResultToFile(players, room.Id)
+	go saveResultToFile(players, room.Id)
 	room.SendAll(messages.OVER_MSG)
 }
 

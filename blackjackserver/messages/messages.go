@@ -74,9 +74,9 @@ func dealerHandMessage(player models.Player) string {
 	return makeJsonMessage("DealerHand", player.Hand.ToJson())
 }
 
-type listPlayersFunc func([]models.Player) string
+type listPlayersFunc func([]*models.Player) string
 
-func listPlayers(players []models.Player) string {
+func listPlayers(players []*models.Player) string {
 	playerMessageBytes, _ := json.Marshal(players)
 	return makeJsonMessage("ListPlayers", string(playerMessageBytes))
 }

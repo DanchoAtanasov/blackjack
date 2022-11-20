@@ -62,7 +62,7 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	}
 
 	playerConn := PlayerConn{
-		player: newPlayer,
+		player: &newPlayer,
 		Conn:   *conn,
 	}
 

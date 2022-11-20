@@ -13,7 +13,7 @@ import (
 
 // Struct used to couple the player model and the connection to them
 type PlayerConn struct {
-	player models.Player
+	player *models.Player
 	Conn   net.Conn
 }
 
@@ -55,8 +55,8 @@ func (room *Room) SendAll(msg string) {
 	}
 }
 
-func (room *Room) GetPlayers() []models.Player {
-	var players []models.Player
+func (room *Room) GetPlayers() []*models.Player {
+	var players []*models.Player
 	for i := 0; i < len(room.playerConns); i++ {
 		players = append(players, room.playerConns[i].player)
 	}
