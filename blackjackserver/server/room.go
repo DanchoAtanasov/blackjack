@@ -44,6 +44,9 @@ func (room *Room) RemoveDisconnectedPlayer() {
 
 func (room *Room) ChangePlayer() {
 	// Change players by popping from queue and appending
+	// TODO: fix if player disconnects the order of players is offset
+	// i.e. [1, 2, 3] -> 3 disconnects -> [1, 2] -> change player -> start turn [2, 1] instead of
+	// [1, 2]
 	var currentConn PlayerConn
 	currentConn, room.playerConns = room.playerConns[0], room.playerConns[1:]
 	room.playerConns = append(room.playerConns, currentConn)
