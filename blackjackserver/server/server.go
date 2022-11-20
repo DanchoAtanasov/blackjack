@@ -59,6 +59,7 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 		// NOTE: since Hand is empty when JSON serialised it will be sent a null
 		// so it's handled by the frontend. Maybe change the serialization by
 		// making a custom serializer or instantiating the hand beforehand, pun intended
+		Active: true,
 	}
 
 	playerConn := PlayerConn{

@@ -99,6 +99,7 @@ func playTurn(
 		} else if input == "Out" {
 			fmt.Println("Removing disconnected player")
 			room.RemoveDisconnectedPlayer()
+			player.Active = false
 			break
 		}
 
@@ -154,7 +155,9 @@ func playRound(deck *models.Deck, room *server.Room) {
 		currPlayer := players[i]
 		room.Log.Printf("%s's turn, buy in: %d", currPlayer.Name, currPlayer.BuyIn)
 
-		playTurn(currPlayer, deck, room)
+		if currPlayer.Active {
+			playTurn(currPlayer, deck, room)
+		}
 
 		room.ChangePlayer()
 

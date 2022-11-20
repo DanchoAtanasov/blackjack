@@ -14,6 +14,7 @@ type Player struct {
 	Hand       Hand
 	CurrentBet int
 	IsDealer   bool `json:"-"`
+	Active     bool `json:"-"`
 }
 
 func (player *Player) Win() {
