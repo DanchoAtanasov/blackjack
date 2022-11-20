@@ -69,12 +69,9 @@ func (room *Room) ReadInMessages() {
 
 		currPlayer := room.playerConns[i].player
 		if response.Playing {
-			fmt.Println("Player is in")
 			currPlayer.Active = true
-			fmt.Printf("new current bet is %d\n", response.CurrentBet)
 			currPlayer.CurrentBet = response.CurrentBet
 		} else {
-			fmt.Println("Player is not in")
 			currPlayer.Active = false
 		}
 	}
