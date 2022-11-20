@@ -127,7 +127,28 @@ func clearHands(players []models.Player) {
 	}
 }
 
-func play(deck *models.Deck, room *server.Room) {
+func calculateWinners(players []models.Player, dealer models.Player, room server.Room) {
+	fmt.Println(players)
+	for i := range players {
+		currPlayer := &players[i]
+		switch models.GetWinner(currPlayer.Hand, dealer.Hand) {
+		case 2:
+			room.Log.Printf("%s had Blackjack, gets 3x bet", currPlayer.Name)
+			currPlayer.Blackjack()
+		case 1:
+			room.Log.Printf("%s wins!", currPlayer.Name)
+			currPlayer.Win()
+		case -1:
+			room.Log.Info("Dealer wins. :(")
+			currPlayer.Lose()
+		case 0:
+			room.Log.Info("Draw")
+		}
+	}
+	fmt.Println(players)
+}
+
+func playRound(deck *models.Deck, room *server.Room) {
 	dealer := &models.Player{Name: "Dealer"}
 
 	// This makes a copy and differs from room's player objects
@@ -164,26 +185,14 @@ func play(deck *models.Deck, room *server.Room) {
 	room.Log.Info(DIVIDER)
 
 	fmt.Println(players)
-	for i := range players {
-		currPlayer := &players[i]
-		switch models.GetWinner(currPlayer.Hand, dealer.Hand) {
-		case 2:
-			room.Log.Printf("%s had Blackjack, gets 3x bet", currPlayer.Name)
-			currPlayer.Win()
-			currPlayer.Win()
-		case 1:
-			room.Log.Printf("%s wins!", currPlayer.Name)
-			currPlayer.Win()
-		case -1:
-			room.Log.Info("Dealer wins. :(")
-			currPlayer.Lose()
-		case 0:
-			room.Log.Info("Draw")
-		}
-	}
+	calculateWinners(players, *dealer, *room)
+	fmt.Println("After winnings")
+	fmt.Println(players)
 
 	clearHands(players)
-	time.Sleep(5 * time.Second)
+	fmt.Println("After clearing hands")
+	fmt.Println(players)
+	time.Sleep(settings.TimeBetweenRounds)
 }
 
 type PlayerDetails struct {
@@ -202,7 +211,7 @@ func playRoom(room *server.Room) {
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
 		room.Log.Printf("----------Round %d----------", round+1)
 
-		play(&deck, room)
+		playRound(&deck, room)
 
 		deck = *models.ShuffleDeckIfLow(&deck, 150)
 	}
