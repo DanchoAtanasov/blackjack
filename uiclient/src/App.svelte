@@ -7,6 +7,7 @@
 
   import Session from './Session';
   import DealerHand from './lib/DealerHand.svelte';
+  import CurrentBet from './lib/CurrentBet.svelte';
 
   var session = new Session();
 
@@ -47,6 +48,7 @@
 
     <HitButton on:hit={sendHit}/>
     <StandButton on:stand={sendStand}/>
+    <CurrentBet></CurrentBet>
 
   {/if}
 </main>

@@ -55,6 +55,10 @@ func gameStart() string {
 	return makeGameMessage("Start")
 }
 
+func playingThisHand() string {
+	return makeGameMessage("IN")
+}
+
 type handMessageFunc func(models.Player) string
 
 func playerHandMessage(player models.Player) string {
@@ -68,6 +72,24 @@ func DecodePlayerHandMessage(msg string) (models.Hand, error) {
 	var hand models.Hand
 	err = json.Unmarshal([]byte(message.Message), &hand)
 	return hand, err
+}
+
+// TODO improve names
+type PlayerInResponse struct {
+	Playing    bool
+	CurrentBet int
+}
+
+func playingThisHandResponse() string {
+	return makeActionMessage("In")
+}
+
+func DecodePlayerInMessage(msg string) (PlayerInResponse, error) {
+	var message Message
+	err := json.Unmarshal([]byte(msg), &message)
+	var response PlayerInResponse
+	err = json.Unmarshal([]byte(message.Message), &response)
+	return response, err
 }
 
 func dealerHandMessage(player models.Player) string {
@@ -91,14 +113,16 @@ func listPlayers(players []*models.Player) string {
 // TODO: Add decode for dealer hand message
 
 var (
-	START_MSG        string          = gameStart() // {"type":"Game","message":"Start"}
-	OVER_MSG         string          = gameOver()  // {"type":"Game","message":"Over"}
-	HIT_MSG          string          = hit()       // {"type":"PlayerAction","message":"Hit"}
-	STAND_MSG        string          = stand()     // {"type":"PlayerAction","message":"Stand"}
-	BUST_MSG         string          = bust()      // {"type":"HandState","message":"Bust"}
-	BLACKJACK_MSG    string          = blackjack() // {"type":"HandState","message":"Blackjack"}
-	LIST_PLAYERS_MSG listPlayersFunc = listPlayers // {"type":"ListPlayers","message":"[]"}
+	START_MSG                  string          = gameStart()       // {"type":"Game","message":"Start"}
+	OVER_MSG                   string          = gameOver()        // {"type":"Game","message":"Over"}
+	HIT_MSG                    string          = hit()             // {"type":"PlayerAction","message":"Hit"}
+	STAND_MSG                  string          = stand()           // {"type":"PlayerAction","message":"Stand"}
+	BUST_MSG                   string          = bust()            // {"type":"HandState","message":"Bust"}
+	BLACKJACK_MSG              string          = blackjack()       // {"type":"HandState","message":"Blackjack"}
+	LIST_PLAYERS_MSG           listPlayersFunc = listPlayers       // {"type":"ListPlayers","message":"[]"}
+	DEALER_HAND_MSG            handMessageFunc = dealerHandMessage // {"type":"DealerHand","message":""}
+	HAND_MSG                   handMessageFunc = handMessage       // {"type":"DealerHand" if dealer else "PlayerHand" ,"message":""}
+	PLAYING_THIS_HAND_MSG      string          = playingThisHand()
+	PLAYING_THIS_HAND_RESP_MSG string          = playingThisHandResponse()
 	// PLAYER_HAND_MSG  handMessageFunc = playerHandMessage // {"type":"PlayerHand","message":""}
-	DEALER_HAND_MSG handMessageFunc = dealerHandMessage // {"type":"DealerHand","message":""}
-	HAND_MSG        handMessageFunc = handMessage       // {"type":"DealerHand" if dealer else "PlayerHand" ,"message":""}
 )

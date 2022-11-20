@@ -2,6 +2,7 @@ package server
 
 import (
 	settings "blackjack/config"
+	"blackjack/messages"
 	"blackjack/models"
 	"fmt"
 	"net"
@@ -52,8 +53,30 @@ func (room *Room) ChangePlayer() {
 }
 
 func (room *Room) SendAll(msg string) {
-	for _, playerConnection := range room.playerConns {
-		SendData(playerConnection.Conn, msg)
+	for i := range room.playerConns {
+		SendData(room.playerConns[i].Conn, msg)
+	}
+}
+
+func (room *Room) ReadInMessages() {
+	for i := range room.playerConns {
+		// TODO add retry
+		message := ReadData(room.playerConns[i].Conn)
+		response, err := messages.DecodePlayerInMessage(message)
+		if err != nil {
+			fmt.Printf("Wrong player in response msg: %e\n", err)
+		}
+
+		currPlayer := room.playerConns[i].player
+		if response.Playing {
+			fmt.Println("Player is in")
+			currPlayer.Active = true
+			fmt.Printf("new current bet is %d\n", response.CurrentBet)
+			currPlayer.CurrentBet = response.CurrentBet
+		} else {
+			fmt.Println("Player is not in")
+			currPlayer.Active = false
+		}
 	}
 }
 

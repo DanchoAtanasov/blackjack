@@ -1,6 +1,6 @@
 import { 
   dealerHandStore, playersStore, isConnected, hasGameStarted, NewPlayerRequest,
-  newPlayerRequestStore, isGameOver,
+  newPlayerRequestStore, isGameOver, currBetStore,
 } from './stores'
 import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
@@ -23,6 +23,7 @@ type Message = {
 }
 
 
+// TODO: session currently handles messaging, factor that out and separate message formats
 export default class Session {
   private socket: WebSocket;
   // public gameStarted: boolean;
@@ -147,10 +148,23 @@ export default class Session {
         isGameOver.set(true);
         this.socket.close();
         break;
+      case "IN":
+        console.log("GAME IN: asking if playing the hand");
+        this.sendIn();
+        break;
       default:
         console.log("Game message not recognized");
         break;
     }
+  }
+
+  sendIn() {
+    console.log("Sending in");
+    console.log(get(currBetStore));
+    
+    var message = JSON.stringify({"Playing": true, "CurrentBet": get(currBetStore)});
+    var inMessage = {"type": "PlayerAction", "message": message}
+    this.socket.send(JSON.stringify(inMessage));
   }
 
   async getGameDetails(): Promise<GameDetails> {

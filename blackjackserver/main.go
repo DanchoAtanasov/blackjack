@@ -138,6 +138,11 @@ func playRound(deck *models.Deck, room *server.Room) {
 	// Note: players is a slice of pointers as they're created in register and this way they can
 	// be updated from the game logic code
 	players := room.GetPlayers()
+
+	// Ask who's playing
+	room.SendAll(messages.PLAYING_THIS_HAND_MSG)
+	room.ReadInMessages()
+
 	for i := range players {
 		players[i].Hand.AddCard(deck.DealCard())
 	}
@@ -153,7 +158,7 @@ func playRound(deck *models.Deck, room *server.Room) {
 	// Players' turn
 	for i := range players {
 		currPlayer := players[i]
-		room.Log.Printf("%s's turn, buy in: %d", currPlayer.Name, currPlayer.BuyIn)
+		room.Log.Printf("%s's turn, buy in: %d, bet: %d", currPlayer.Name, currPlayer.BuyIn, currPlayer.CurrentBet)
 
 		if currPlayer.Active {
 			playTurn(currPlayer, deck, room)
