@@ -74,6 +74,13 @@ func dealerHandMessage(player models.Player) string {
 	return makeJsonMessage("DealerHand", player.Hand.ToJson())
 }
 
+func handMessage(player models.Player) string {
+	if player.IsDealer {
+		return dealerHandMessage(player)
+	}
+	return playerHandMessage(player)
+}
+
 type listPlayersFunc func([]*models.Player) string
 
 func listPlayers(players []*models.Player) string {
@@ -84,15 +91,14 @@ func listPlayers(players []*models.Player) string {
 // TODO: Add decode for dealer hand message
 
 var (
-	START_MSG        string          = gameStart()       // {"type":"Game","message":"Start"}
-	OVER_MSG         string          = gameOver()        // {"type":"Game","message":"Over"}
-	HIT_MSG          string          = hit()             // {"type":"PlayerAction","message":"Hit"}
-	STAND_MSG        string          = stand()           // {"type":"PlayerAction","message":"Stand"}
-	BUST_MSG         string          = bust()            // {"type":"HandState","message":"Bust"}
-	BLACKJACK_MSG    string          = blackjack()       // {"type":"HandState","message":"Blackjack"}
-	LIST_PLAYERS_MSG listPlayersFunc = listPlayers       // {"type":"ListPlayers","message":"[]"}
-	PLAYER_HAND_MSG  handMessageFunc = playerHandMessage // {"type":"PlayerHand","message":""}
-	DEALER_HAND_MSG  handMessageFunc = dealerHandMessage // {"type":"DealerHand","message":""}
-
-	// dealer hand
+	START_MSG        string          = gameStart() // {"type":"Game","message":"Start"}
+	OVER_MSG         string          = gameOver()  // {"type":"Game","message":"Over"}
+	HIT_MSG          string          = hit()       // {"type":"PlayerAction","message":"Hit"}
+	STAND_MSG        string          = stand()     // {"type":"PlayerAction","message":"Stand"}
+	BUST_MSG         string          = bust()      // {"type":"HandState","message":"Bust"}
+	BLACKJACK_MSG    string          = blackjack() // {"type":"HandState","message":"Blackjack"}
+	LIST_PLAYERS_MSG listPlayersFunc = listPlayers // {"type":"ListPlayers","message":"[]"}
+	// PLAYER_HAND_MSG  handMessageFunc = playerHandMessage // {"type":"PlayerHand","message":""}
+	DEALER_HAND_MSG handMessageFunc = dealerHandMessage // {"type":"DealerHand","message":""}
+	HAND_MSG        handMessageFunc = handMessage       // {"type":"DealerHand" if dealer else "PlayerHand" ,"message":""}
 )

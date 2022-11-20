@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	settings "blackjack/config"
 	"blackjack/messages"
 	"blackjack/models"
@@ -63,43 +61,39 @@ func saveResultToFile(players []*models.Player, id string) {
 func playTurn(
 	player *models.Player,
 	deck *models.Deck,
-	log *logrus.Logger,
 	room *server.Room,
 ) {
 	for {
-		log.Printf("%s's hand is %v", player.Name, player.Hand.Cards)
-		log.Printf("Current count: %d", player.Hand.Sum)
+		room.Log.Printf("%s's hand is %v", player.Name, player.Hand.Cards)
+		room.Log.Printf("Current count: %d", player.Hand.Sum)
 
 		// Send current hand
-		if player.Name == "Dealer" {
-			room.SendAll(messages.DEALER_HAND_MSG(*player))
-		} else {
-			room.SendAll(messages.PLAYER_HAND_MSG(*player))
-		}
+		room.SendAll(messages.HAND_MSG(*player))
 
 		if player.Hand.IsBlackjack {
-			if player.Name != "Dealer" {
+			if !player.IsDealer {
 				room.Log.Info("Blackjack!")
 				room.SendCurrPlayer(messages.BLACKJACK_MSG)
+				// Maybe send all that it's a blackjack
+				// room.SendAll(messages.BLACKJACK_MSG)
 			}
 			break
 		}
 
 		if player.Hand.IsBust() {
-			log.Info("Over 21, bust")
-			if player.Name != "Dealer" {
-				room.SendAll(messages.BUST_MSG)
-			}
+			room.Log.Info("Over 21, bust")
+			room.SendAll(messages.BUST_MSG)
 			break
 		}
 
 		// Read action
 		var input string
-		if player.Name == "Dealer" {
+		if player.IsDealer {
 			input = readDealerAction(player.Hand)
 		} else {
 			input = readPlayerAction(room)
 		}
+
 		if input == messages.STAND_MSG {
 			break
 		} else if input == "Out" {
@@ -138,7 +132,7 @@ func calculateWinners(players []*models.Player, dealer models.Player, room serve
 }
 
 func playRound(deck *models.Deck, room *server.Room) {
-	dealer := &models.Player{Name: "Dealer"}
+	dealer := &models.Player{Name: "Dealer", IsDealer: true}
 
 	// Note: players is a slice of pointers as they're created in register and this way they can
 	// be updated from the game logic code
@@ -160,7 +154,7 @@ func playRound(deck *models.Deck, room *server.Room) {
 		currPlayer := players[i]
 		room.Log.Printf("%s's turn, buy in: %d", currPlayer.Name, currPlayer.BuyIn)
 
-		playTurn(currPlayer, deck, room.Log, room)
+		playTurn(currPlayer, deck, room)
 
 		room.ChangePlayer()
 
@@ -168,7 +162,7 @@ func playRound(deck *models.Deck, room *server.Room) {
 	}
 
 	// Dealer's turn
-	playTurn(dealer, deck, room.Log, room)
+	playTurn(dealer, deck, room)
 	room.Log.Info(DIVIDER)
 
 	calculateWinners(players, *dealer, *room)
