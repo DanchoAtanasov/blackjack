@@ -6,7 +6,7 @@
 
 <label>
   <h4>Next bet:
-  	<input type=number bind:value={$currBetStore} min=1>
+  	<input type=number class="input-box" bind:value={$currBetStore} min=1>
   </h4>
 </label>
   
@@ -16,4 +16,11 @@
     -webkit-appearance: none;
     margin: 0;
   }
+   .input-box {
+     width: 40px;
+     text-align: center;
+     border-radius: 100px;
+     border: 2px solid #73AD21;
+     padding: 5px;
+   }
 </style>
