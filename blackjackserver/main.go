@@ -187,6 +187,11 @@ func playRoom(room *server.Room) {
 	room.SendAll(messages.START_MSG)
 
 	for round := 0; round < settings.NumRoundsPerGame; round++ {
+		if room.IsEmpty() {
+			room.Log.Println("Room is empty, game over.")
+			break
+		}
+
 		room.Log.Printf("----------Round %d----------", round+1)
 
 		playRound(&deck, room)

@@ -33,12 +33,20 @@ func MakeRoom() *Room {
 	return &room
 }
 
+func (room *Room) IsEmpty() bool {
+	return len(room.playerConns) == 0
+}
+
 func (room *Room) GetCurrPlayerConn() *PlayerConn {
 	return &room.playerConns[0]
 }
 
 func (room *Room) RemoveDisconnectedPlayer() {
 	// TODO improve player diconnecting/rotating logic
+	if len(room.playerConns) <= 1 {
+		room.playerConns = room.playerConns[:0]
+		return
+	}
 	room.playerConns = room.playerConns[1:]
 }
 
@@ -47,6 +55,9 @@ func (room *Room) ChangePlayer() {
 	// TODO: fix if player disconnects the order of players is offset
 	// i.e. [1, 2, 3] -> 3 disconnects -> [1, 2] -> change player -> start turn [2, 1] instead of
 	// [1, 2]
+	if room.IsEmpty() {
+		return
+	}
 	var currentConn PlayerConn
 	currentConn, room.playerConns = room.playerConns[0], room.playerConns[1:]
 	room.playerConns = append(room.playerConns, currentConn)
