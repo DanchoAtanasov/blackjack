@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"time"
 
@@ -16,22 +15,11 @@ import (
 
 const DIVIDER string = "---------------------------------"
 
-type senderFunc func(net.Conn, string, server.Room)
-type readerFunc func(net.Conn, models.Hand) string
-
-func sendPlayer(conn net.Conn, message string, room server.Room) {
-	server.SendData(conn, message)
-}
-
-func sendDealer(conn net.Conn, message string, room server.Room) {
-	room.SendAll(message)
-}
-
-func readPlayerAction(conn net.Conn, hand models.Hand) string {
+func readPlayerAction(room *server.Room) string {
 	var input string
 	retries := 5
 	for {
-		input = server.ReadData(conn)
+		input = room.ReadCurrPlayer()
 		if input == messages.HIT_MSG || input == messages.STAND_MSG {
 			break
 		}
@@ -47,7 +35,7 @@ func readPlayerAction(conn net.Conn, hand models.Hand) string {
 	return input
 }
 
-func readDealerAction(conn net.Conn, hand models.Hand) string {
+func readDealerAction(hand models.Hand) string {
 	if hand.Sum > 17 {
 		return messages.STAND_MSG
 	}
@@ -75,9 +63,6 @@ func saveResultToFile(players []*models.Player, id string) {
 func playTurn(
 	player *models.Player,
 	deck *models.Deck,
-	conn net.Conn,
-	readAction readerFunc,
-	sendAction senderFunc,
 	log *logrus.Logger,
 	room *server.Room,
 ) {
@@ -87,7 +72,7 @@ func playTurn(
 
 		// Send current hand
 		if player.Name == "Dealer" {
-			sendAction(conn, messages.DEALER_HAND_MSG(*player), *room)
+			room.SendAll(messages.DEALER_HAND_MSG(*player))
 		} else {
 			room.SendAll(messages.PLAYER_HAND_MSG(*player))
 		}
@@ -95,19 +80,26 @@ func playTurn(
 		if player.Hand.IsBlackjack {
 			if player.Name != "Dealer" {
 				room.Log.Info("Blackjack!")
-				sendAction(conn, messages.BLACKJACK_MSG, *room)
+				room.SendCurrPlayer(messages.BLACKJACK_MSG)
 			}
 			break
 		}
 
 		if player.Hand.IsBust() {
 			log.Info("Over 21, bust")
-			sendAction(conn, messages.BUST_MSG, *room)
+			if player.Name != "Dealer" {
+				room.SendAll(messages.BUST_MSG)
+			}
 			break
 		}
 
 		// Read action
-		input := readAction(conn, player.Hand)
+		var input string
+		if player.Name == "Dealer" {
+			input = readDealerAction(player.Hand)
+		} else {
+			input = readPlayerAction(room)
+		}
 		if input == messages.STAND_MSG {
 			break
 		} else if input == "Out" {
@@ -118,7 +110,6 @@ func playTurn(
 
 		player.Hand.AddCard(deck.DealCard())
 	}
-	fmt.Println(*player)
 }
 
 func clearHands(players []*models.Player) {
@@ -164,14 +155,12 @@ func playRound(deck *models.Deck, room *server.Room) {
 	room.SendAll(messages.LIST_PLAYERS_MSG(players))
 	room.SendAll(messages.DEALER_HAND_MSG(*dealer))
 
-	currConn := room.GetCurrPlayerConn().Conn
 	// Players' turn
 	for i := range players {
 		currPlayer := players[i]
 		room.Log.Printf("%s's turn, buy in: %d", currPlayer.Name, currPlayer.BuyIn)
-		currConn = room.GetCurrPlayerConn().Conn
 
-		playTurn(currPlayer, deck, currConn, readPlayerAction, sendPlayer, room.Log, room)
+		playTurn(currPlayer, deck, room.Log, room)
 
 		room.ChangePlayer()
 
@@ -179,7 +168,7 @@ func playRound(deck *models.Deck, room *server.Room) {
 	}
 
 	// Dealer's turn
-	playTurn(dealer, deck, currConn, readDealerAction, sendDealer, room.Log, room)
+	playTurn(dealer, deck, room.Log, room)
 	room.Log.Info(DIVIDER)
 
 	calculateWinners(players, *dealer, *room)

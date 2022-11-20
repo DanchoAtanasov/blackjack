@@ -58,6 +58,14 @@ func (room *Room) SendAll(msg string) {
 	}
 }
 
+func (room *Room) SendCurrPlayer(msg string) {
+	SendData(room.GetCurrPlayerConn().Conn, msg)
+}
+
+func (room *Room) ReadCurrPlayer() string {
+	return ReadData(room.GetCurrPlayerConn().Conn)
+}
+
 func (room *Room) GetPlayers() []*models.Player {
 	var players []*models.Player
 	for i := 0; i < len(room.playerConns); i++ {
