@@ -5,7 +5,9 @@
 
 
 <label>
-	<input type=number bind:value={$currBetStore} min=1>
+  <h4>Next bet:
+  	<input type=number bind:value={$currBetStore} min=1>
+  </h4>
 </label>
   
 <style>
