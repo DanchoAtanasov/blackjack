@@ -50,27 +50,27 @@ func TestMessage(t *testing.T) {
 	})
 
 	t.Run("test player hand message", func(t *testing.T) {
-		hand := models.Hand{}
-		hand.AddCard(models.Card{
+		player := models.Player{}
+		player.Hand.AddCard(models.Card{
 			ValueStr: "2",
 			Suit:     "Spades",
 		})
-		hand.AddCard(models.Card{
+		player.Hand.AddCard(models.Card{
 			ValueStr: "3",
 			Suit:     "Clubs",
 		})
-		message := PlayerHandMessage(hand)
-		expected := `{"type":"PlayerHand","message":"{\"cards\":[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"},{\"ValueStr\":\"3\",\"Suit\":\"Clubs\"}],\"sum\":0}"}`
+		message := playerHandMessage(player)
+		expected := `{"type":"PlayerHand","message":"{\"Name\":\"\",\"BuyIn\":0,\"Hand\":{\"cards\":[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"},{\"ValueStr\":\"3\",\"Suit\":\"Clubs\"}],\"sum\":0},\"CurrentBet\":0}"}`
 		assertStringEqual(t, message, expected)
 	})
 
 	t.Run("test dealer hand message", func(t *testing.T) {
-		hand := models.Hand{}
-		hand.AddCard(models.Card{
+		player := models.Player{}
+		player.Hand.AddCard(models.Card{
 			ValueStr: "2",
 			Suit:     "Spades",
 		})
-		message := DealerHandMessage(hand)
+		message := dealerHandMessage(player)
 		expected := `{"type":"DealerHand","message":"{\"cards\":[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"}],\"sum\":0}"}`
 		assertStringEqual(t, message, expected)
 	})
