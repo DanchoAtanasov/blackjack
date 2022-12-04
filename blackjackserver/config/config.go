@@ -2,9 +2,10 @@ package config
 
 import "time"
 
-var NumDecksInShoe int = 6
-var RoomSize int = 2
-var NumRoundsPerGame int = 3
-var InitialBuyIn int = 100
-var CurrBet int = 1
-var TimeBetweenRounds time.Duration = 5 * time.Second
+const NumDecksInShoe int = 6
+const RoomSize int = 2
+const NumRoundsPerGame int = 3
+const InitialBuyIn int = 100
+const CurrBet int = 1
+const TimeBetweenRounds time.Duration = 5 * time.Second
+const ReadTimeout time.Duration = 30 * time.Second
