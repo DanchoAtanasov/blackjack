@@ -8,4 +8,4 @@ const NumRoundsPerGame int = 3
 const InitialBuyIn int = 100
 const CurrBet int = 1
 const TimeBetweenRounds time.Duration = 5 * time.Second
-const ReadTimeout time.Duration = 30 * time.Second
+const ReadTimeout time.Duration = 1000 * time.Second

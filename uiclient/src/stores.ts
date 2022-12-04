@@ -24,6 +24,7 @@ export type NewPlayerRequest = {
 }
 
 export const currPlayerName = writable('');
+export const currTurn = writable('');
 export const buyin = writable(0);
 export const newPlayerRequestStore = writable<NewPlayerRequest>();
 export const isConnected = writable(false);

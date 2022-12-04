@@ -1,6 +1,6 @@
 import { 
   dealerHandStore, playersStore, isConnected, hasGameStarted, NewPlayerRequest,
-  newPlayerRequestStore, isGameOver, currBetStore,
+  newPlayerRequestStore, isGameOver, currBetStore, currTurn,
 } from './stores'
 import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
@@ -128,11 +128,13 @@ export default class Session {
   handlePlayerHandMessages(message: Message){
     var player: Player = JSON.parse(message.message);
     console.log(player);
+    currTurn.set(player.Name);
     playersStore.set(player.Name, player);
   }
 
   handleDealerHandMessages(message: Message){
     var dealerHand: Hand = JSON.parse(message.message);
+    currTurn.set('Dealer');
     dealerHandStore.set(dealerHand);
   }
 
