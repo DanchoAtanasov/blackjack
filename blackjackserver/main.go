@@ -98,7 +98,7 @@ func playTurn(
 			break
 		} else if input == "Out" {
 			fmt.Println("Removing disconnected player")
-			room.RemoveDisconnectedPlayer()
+			room.RemoveDisconnectedPlayer(0)
 			player.Active = false
 			break
 		}

@@ -41,13 +41,14 @@ func (room *Room) GetCurrPlayerConn() *PlayerConn {
 	return &room.playerConns[0]
 }
 
-func (room *Room) RemoveDisconnectedPlayer() {
+func (room *Room) RemoveDisconnectedPlayer(position int) {
 	// TODO improve player diconnecting/rotating logic
 	if len(room.playerConns) <= 1 {
 		room.playerConns = room.playerConns[:0]
 		return
 	}
-	room.playerConns = room.playerConns[1:]
+	// TODO: improve this as it's inefficient
+	room.playerConns = append(room.playerConns[:position], room.playerConns[position+1:]...)
 }
 
 func (room *Room) ChangePlayer() {
@@ -78,7 +79,7 @@ func (room *Room) ReadInMessages() {
 		if message == "EOF" {
 			fmt.Println("Player has disconnected")
 			currPlayer.Active = false
-			room.RemoveDisconnectedPlayer()
+			room.RemoveDisconnectedPlayer(i)
 			continue
 		}
 
