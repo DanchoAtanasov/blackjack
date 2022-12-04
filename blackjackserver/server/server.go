@@ -6,7 +6,9 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"sync"
+	"time"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -16,17 +18,23 @@ import (
 )
 
 func ReadData(conn net.Conn) string {
+	// TODO: Improve connection closed vs read timed out error handling
 	// Returns empty string if read failed, EOF if connection was closed
+	conn.SetReadDeadline(time.Now().Add(settings.ReadTimeout))
+
 	msg, err := wsutil.ReadClientText(conn)
 	if err != nil {
-		fmt.Printf("Read failed, %s, %e\n", err, err)
+		fmt.Println("Read failed")
 		if errors.Is(err, io.EOF) {
 			fmt.Println("Connection closed by client")
-			return "EOF"
 		} else if errors.Is(err, wsutil.ClosedError{Code: 1001}) {
 			fmt.Println("Connection closed by client, ws closed")
-			return "EOF"
+		} else if errors.Is(err, os.ErrDeadlineExceeded) {
+			fmt.Println("Read timed out")
+		} else {
+			fmt.Printf("Some other error: %e\n", err)
 		}
+		return "EOF"
 	}
 
 	msg_str := string(msg)
