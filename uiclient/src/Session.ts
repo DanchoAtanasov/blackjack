@@ -6,7 +6,7 @@ import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
 
 
-const API_SERVER_URL = "http://localhost:3333/play"
+const API_SERVER_URL = "http://localhost:80/api/play"
 
 type Token = {
   Token: string,
