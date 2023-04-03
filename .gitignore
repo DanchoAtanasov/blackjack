@@ -1,0 +1,3 @@
+ignore/*
+nginx/certs/cert.crt
+nginx/keys/key.pem

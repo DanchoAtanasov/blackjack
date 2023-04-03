@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis"
-	"github.com/google/uuid"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/go-redis/redis"
+	"github.com/google/uuid"
 )
 
 func getEnv(key, fallback string) string {
@@ -62,7 +63,7 @@ func play(w http.ResponseWriter, r *http.Request) {
 		GameServer string
 		Token      string
 	}
-	response := BlackjackServerDetails{GameServer: "localhost:80/blackjack/", Token: uuid.NewString()}
+	response := BlackjackServerDetails{GameServer: "localhost/blackjack/", Token: uuid.NewString()}
 	responseString, _ := json.Marshal(response)
 	io.WriteString(w, string(responseString))
 

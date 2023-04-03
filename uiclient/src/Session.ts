@@ -6,7 +6,7 @@ import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
 
 
-const API_SERVER_URL = "http://localhost:80/api/play"
+const API_SERVER_URL = "https://localhost/api/play"
 
 type Token = {
   Token: string,
@@ -40,7 +40,7 @@ export default class Session {
     var gameDetails = await this.getGameDetails();
 
     // // Create WebSocket connection.
-    this.socket = new WebSocket(`ws://${gameDetails.GameServer}`);
+    this.socket = new WebSocket(`wss://${gameDetails.GameServer}`);
 
     // Send token when connection opened
     this.socket.addEventListener('open', (event) => {
@@ -48,8 +48,13 @@ export default class Session {
       this.socket.send(JSON.stringify(token));
     });
 
+    this.socket.addEventListener('error', (event) => {
+      console.log(event);
+    });
+
     this.socket.addEventListener('close', (event) => {
       console.log("Connection closed by server.")
+      console.log(event);
       isGameOver.set(true);
     });
 
