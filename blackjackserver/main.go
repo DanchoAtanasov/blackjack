@@ -37,7 +37,7 @@ func readDealerAction(hand models.Hand) string {
 	if hand.Sum > 17 {
 		return messages.STAND_MSG
 	}
-	// Dealer must hit a soft 17
+	// Dealer stands on a soft 17 as per the UK rules
 	if hand.Sum == 17 && hand.NumAces <= 0 {
 		return messages.STAND_MSG
 	}
