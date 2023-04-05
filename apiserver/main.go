@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,8 +9,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -20,7 +23,14 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
+func loadPrivateKey() *rsa.PrivateKey {
+	keyData, _ := os.ReadFile("keys/key.pem")
+	key, _ := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	return key
+}
+
 var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
+var PRIVATE_KEY *rsa.PrivateKey = loadPrivateKey()
 
 type PlayerRequest struct {
 	Name    string
@@ -59,15 +69,46 @@ func play(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("got %s, %d, %d\n", playerRequest.Name, playerRequest.BuyIn, playerRequest.CurrBet)
+
 	type BlackjackServerDetails struct {
 		GameServer string
 		Token      string
 	}
-	response := BlackjackServerDetails{GameServer: "localhost/blackjack/", Token: uuid.NewString()}
+
+	redisToken := uuid.NewString()
+	token := generateJwt(playerRequest, redisToken)
+	fmt.Println(token)
+
+	response := BlackjackServerDetails{GameServer: "localhost/blackjack/", Token: token}
 	responseString, _ := json.Marshal(response)
 	io.WriteString(w, string(responseString))
 
-	go storeSession(response.Token, playerRequest)
+	go storeSession(redisToken, playerRequest)
+
+}
+
+func generateJwt(playerRequest PlayerRequest, uuid string) string {
+	// Create a new token object, specifying signing method and the claims
+	// you would like it to contain.
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+		"token": uuid,
+		// "name": playerRequest.Name,
+		// "buyin":   playerRequest.BuyIn,
+		// "currbet": playerRequest.CurrBet,
+		"nbf": time.Now().Unix(),
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Add(1 * time.Hour).Unix(),
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString(PRIVATE_KEY)
+	if err != nil {
+		fmt.Printf("Token signing failed %s/n", err)
+		return ""
+	}
+
+	fmt.Printf("Generated token: %s\n", tokenString)
+	return tokenString
 }
 
 func storeSession(token string, playerRequest PlayerRequest) {

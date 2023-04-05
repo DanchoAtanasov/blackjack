@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.0.0-rc.2 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.22.1 // indirect
 )

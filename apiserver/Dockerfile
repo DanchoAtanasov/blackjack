@@ -18,4 +18,6 @@ WORKDIR /root/
 
 COPY --from=builder /usr/local/bin/app ./
 
+COPY ./keys/key.pem ./keys/key.pem
+
 CMD ["./app"]

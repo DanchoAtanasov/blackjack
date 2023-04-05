@@ -20,6 +20,8 @@ WORKDIR /root/app
 
 COPY --from=builder /usr/local/bin/app ./
 
+COPY ./keys/key.pub ./keys/key.pub
+
 # RUN mkdir -p results
 
 CMD ["./app"]
