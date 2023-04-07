@@ -57,18 +57,18 @@ func setCorsHeaders(w http.ResponseWriter) {
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
-	setCorsHeaders(w)
 	io.WriteString(w, "Time to play some blackjack huh\n")
+}
+
+func new(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("got %s /new request\n", r.Method)
+	fmt.Println(r.Cookies())
+	response, _ := json.Marshal("new")
+	io.WriteString(w, string(response))
 }
 
 func play(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got %s /play request\n", r.Method)
-	setCorsHeaders(w)
-
-	if r.Method == "OPTIONS" {
-		io.WriteString(w, "")
-		return
-	}
 	fmt.Println(r.Cookies())
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -151,14 +151,42 @@ func storeSession(token string, playerRequest PlayerRequest) {
 
 }
 
+func wrapCors(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Before")
+		h.ServeHTTP(w, r) // call original
+		// fmt.Println("After")
+	})
+}
+
+// Middleware that handles CORS
+type Cors struct {
+	handler http.Handler
+}
+
+func (l *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	setCorsHeaders(w)
+	if r.Method == "OPTIONS" {
+		io.WriteString(w, "")
+		return
+	}
+	l.handler.ServeHTTP(w, r)
+}
+
+func NewCors(handlerToWrap http.Handler) *Cors {
+	return &Cors{handlerToWrap}
+}
+
 func main() {
 	port := 3333
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getRoot)
 	mux.HandleFunc("/play", play)
+	mux.HandleFunc("/new", new)
+	corsMux := NewCors(mux)
 
 	fmt.Printf("Api server started on port %d\n", port)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), corsMux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 	} else if err != nil {
