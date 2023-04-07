@@ -6,7 +6,7 @@ import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
 
 
-const API_SERVER_URL = "https://localhost/api/play"
+const API_SERVER_URL = "https://blackjack.gg/api/play"
 
 type Token = {
   Token: string,
@@ -182,6 +182,7 @@ export default class Session {
       method: "POST",
       headers: {'Content-Type': 'application/json'}, 
       body: JSON.stringify(newPlayerRequest),
+      credentials: "include",
     }).then(res => res.json()
     ).catch(err => console.log(`Error getting details ${err}`)
     );

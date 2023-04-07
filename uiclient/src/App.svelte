@@ -5,9 +5,18 @@
   import PlayerHand from './lib/PlayerHand.svelte';
   import { currPlayerName, playersStore, isConnected, hasGameStarted, isGameOver } from './stores';
 
+  import { onMount } from 'svelte';
   import Session from './Session';
   import DealerHand from './lib/DealerHand.svelte';
   import CurrentBet from './lib/CurrentBet.svelte';
+
+  function checkTokenCookie() {
+    console.log(document.cookie);
+  }
+
+  onMount(async () => {
+    checkTokenCookie();
+  });
 
   var session = new Session();
 
@@ -22,6 +31,7 @@
   function sendStand() {
     session.sendStand();
   }
+
 
 </script>
 

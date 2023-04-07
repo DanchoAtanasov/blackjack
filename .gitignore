@@ -1,5 +1,3 @@
 ignore/*
-nginx/certs/*
-nginx/keys/*
-apiserver/keys/*
-blackjackserver/keys/*
+*/keys/*
+*/certs/*

@@ -45,9 +45,9 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 func play(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got %s /play request\n", r.Method)
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Origin", "https://blackjack.gg:5173")
 	w.Header().Set("Access-Control-Allow-Methods", "POST")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "content-type")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Max-Age", "240")
 
@@ -55,6 +55,7 @@ func play(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "")
 		return
 	}
+	fmt.Println(r.Cookies())
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -79,8 +80,20 @@ func play(w http.ResponseWriter, r *http.Request) {
 	token := generateJwt(playerRequest, redisToken)
 	fmt.Println(token)
 
-	response := BlackjackServerDetails{GameServer: "localhost/blackjack/", Token: token}
+	// response := BlackjackServerDetails{GameServer: "localhost/blackjack/", Token: token}
+	response := BlackjackServerDetails{GameServer: "blackjack.gg/blackjack/", Token: token}
 	responseString, _ := json.Marshal(response)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		Expires:  time.Now().Add(5 * time.Hour),
+		Secure:   true,
+		HttpOnly: false,
+		SameSite: http.SameSiteNoneMode,
+		Domain:   ".blackjack.gg",
+	})
+	fmt.Println("cookie set")
 	io.WriteString(w, string(responseString))
 
 	go storeSession(redisToken, playerRequest)
