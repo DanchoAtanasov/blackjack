@@ -50,7 +50,8 @@ services:
     environment:
       POSTGRES_PASSWORD: superpassword
     ports:
-      - "5432"
+      # TODO close port
+      - "5432:5432"
 
   # client:
   #   image: 127.0.0.1:5000/client
