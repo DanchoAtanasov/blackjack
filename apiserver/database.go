@@ -22,8 +22,30 @@ const (
 	maxWaitInterval = 3 * time.Second
 )
 
-// TODO improve database abstraction
-func connectToDatabase() error {
+type databaseInterface interface {
+	connect()
+	query(string)
+	Close()
+}
+
+type Database struct {
+	db *sql.DB
+}
+
+func (database *Database) Close() {
+	database.db.Close()
+}
+
+func (database *Database) query() {
+	result, err := database.db.Query("SELECT * from users;")
+	if err != nil {
+		fmt.Println("query failed")
+	}
+	defer result.Close()
+	fmt.Println(result)
+}
+
+func (database *Database) connect() error {
 	psqlconn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s sslmode=disable",
 		host, port, user, password,
@@ -32,9 +54,9 @@ func connectToDatabase() error {
 	var (
 		tryCount uint
 		waitTime time.Duration = initialWait
-		db       *sql.DB
 		err      error
 	)
+	// Retry when connecting as database container might not be up yet
 	for {
 		tryCount++
 		if tryCount > maxRetries {
@@ -42,10 +64,10 @@ func connectToDatabase() error {
 			return errors.New("max retries to database exceeded")
 		}
 
-		db, err = sql.Open("postgres", psqlconn)
+		database.db, err = sql.Open("postgres", psqlconn)
 
 		// check db
-		err = db.Ping()
+		err = database.db.Ping()
 		if err == nil {
 			break
 		}
@@ -58,20 +80,34 @@ func connectToDatabase() error {
 			waitTime = maxWaitInterval
 		}
 	}
+	return nil
+}
 
-	// close database
-	defer db.Close()
-	fmt.Println("Connected")
+type UsersDatabase struct {
+	Database
+}
 
-	fmt.Println("Checking if users table exists")
-	_, err = db.Exec(`SELECT 1 FROM users;`)
-	if err == nil {
-		fmt.Println("Users table exists, conneciton complete")
-		return nil
+func NewUsersDatabase() (UsersDatabase, error) {
+	database := UsersDatabase{}
+	database.connect()
+	if database.checkIfTableExists() {
+		return database, nil
 	}
+	// Table does not exist, create it
+	database.createTable()
+	database.addRootUser()
+	return database, nil
+}
 
-	fmt.Println("Users table does not exist, creating...")
-	_, err = db.Exec(`
+func (database *UsersDatabase) checkIfTableExists() bool {
+	fmt.Println("Checking if users table exists")
+	_, err := database.db.Exec(`SELECT 1 FROM users;`)
+	return err == nil
+}
+
+func (database *UsersDatabase) createTable() error {
+	fmt.Println("Creating users table")
+	_, err := database.db.Exec(`
 		CREATE TABLE users(
 			id INT PRIMARY KEY,
 			username VARCHAR(50) UNIQUE NOT NULL,
@@ -83,9 +119,12 @@ func connectToDatabase() error {
 		return errors.New("Cant create table")
 	}
 	fmt.Println("Users table created")
+	return nil
+}
 
+func (database *UsersDatabase) addRootUser() error {
 	fmt.Println("Create root user")
-	_, err = db.Exec(`
+	_, err := database.db.Exec(`
 		INSERT INTO users(
 			id, username, password
 		) VALUES (
@@ -96,7 +135,6 @@ func connectToDatabase() error {
 		fmt.Printf("error creating root user %s\n", err)
 		return errors.New("Cant create root user")
 	}
-
-	fmt.Println("Connected to database!")
+	fmt.Println("Root user created")
 	return nil
 }
