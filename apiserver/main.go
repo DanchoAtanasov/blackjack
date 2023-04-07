@@ -31,6 +31,10 @@ func loadPrivateKey() *rsa.PrivateKey {
 
 var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
 var PRIVATE_KEY *rsa.PrivateKey = loadPrivateKey()
+var DOMAIN string = getEnv("DOMAIN", "blackjack.gg")
+var FRONT_END_PORT int = 5173
+var FRONT_END_URL string = fmt.Sprintf("https://%s:%d", DOMAIN, FRONT_END_PORT)
+var BLACKJACK_SERVER_PATH string = fmt.Sprintf("%s/blackjack/", DOMAIN)
 
 type PlayerRequest struct {
 	Name    string
@@ -38,18 +42,28 @@ type PlayerRequest struct {
 	CurrBet int
 }
 
+type BlackjackServerDetails struct {
+	GameServer string
+	Token      string
+}
+
+func setCorsHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", FRONT_END_URL)
+	w.Header().Set("Access-Control-Allow-Methods", "GET,POST")
+	w.Header().Set("Access-Control-Allow-Headers", "content-type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Max-Age", "240")
+}
+
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
+	setCorsHeaders(w)
 	io.WriteString(w, "Time to play some blackjack huh\n")
 }
 
 func play(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got %s /play request\n", r.Method)
-	w.Header().Set("Access-Control-Allow-Origin", "https://blackjack.gg:5173")
-	w.Header().Set("Access-Control-Allow-Methods", "POST")
-	w.Header().Set("Access-Control-Allow-Headers", "content-type")
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Max-Age", "240")
+	setCorsHeaders(w)
 
 	if r.Method == "OPTIONS" {
 		io.WriteString(w, "")
@@ -71,17 +85,11 @@ func play(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("got %s, %d, %d\n", playerRequest.Name, playerRequest.BuyIn, playerRequest.CurrBet)
 
-	type BlackjackServerDetails struct {
-		GameServer string
-		Token      string
-	}
-
 	redisToken := uuid.NewString()
 	token := generateJwt(playerRequest, redisToken)
 	fmt.Println(token)
 
-	// response := BlackjackServerDetails{GameServer: "localhost/blackjack/", Token: token}
-	response := BlackjackServerDetails{GameServer: "blackjack.gg/blackjack/", Token: token}
+	response := BlackjackServerDetails{GameServer: BLACKJACK_SERVER_PATH, Token: token}
 	responseString, _ := json.Marshal(response)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
@@ -91,7 +99,7 @@ func play(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		HttpOnly: false,
 		SameSite: http.SameSiteNoneMode,
-		Domain:   ".blackjack.gg",
+		Domain:   fmt.Sprintf(".%s", DOMAIN),
 	})
 	fmt.Println("cookie set")
 	io.WriteString(w, string(responseString))
