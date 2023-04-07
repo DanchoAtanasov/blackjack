@@ -219,8 +219,14 @@ func main() {
 	mux.HandleFunc("/login", login)
 	corsMux := NewCors(mux)
 
+	err := connectToDatabase()
+	if err != nil {
+		fmt.Printf("error couldn't connect to database: %s\n", err)
+		os.Exit(1)
+	}
+
 	fmt.Printf("Api server started on port %d\n", port)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), corsMux)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", port), corsMux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 	} else if err != nil {

@@ -13,6 +13,7 @@ services:
       - REDIS_HOST=redis
     depends_on:
       - redis
+      - database
 
   apiserver:
     build: apiserver/
@@ -23,6 +24,7 @@ services:
       - REDIS_HOST=redis
     depends_on:
       - redis
+      - database
       
   redis:
     image: redis:latest
@@ -39,6 +41,16 @@ services:
       - apiserver
       - blackjackserver
       - redis
+      - database
+  
+  database:
+    image: postgres:latest
+    container_name: database
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: superpassword
+    ports:
+      - "5432"
 
   # client:
   #   image: 127.0.0.1:5000/client
