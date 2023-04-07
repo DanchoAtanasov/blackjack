@@ -1,12 +1,14 @@
 import { 
   dealerHandStore, playersStore, isConnected, hasGameStarted, NewPlayerRequest,
-  newPlayerRequestStore, isGameOver, currBetStore, currTurn,
+  newPlayerRequestStore, isGameOver, currBetStore, currTurn, LoginRequest, isLoggedIn
 } from './stores'
 import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
 
 
 const API_SERVER_URL = "https://blackjack.gg/api/play"
+const API_SERVER_NEW = "https://blackjack.gg/api/new"
+const API_SERVER_LOGIN = "https://blackjack.gg/api/login"
 
 type Token = {
   Token: string,
@@ -187,5 +189,38 @@ export default class Session {
     ).catch(err => console.log(`Error getting details ${err}`)
     );
     return gameDetails
+  }
+
+  async callNew() {
+    console.log("Found cookie, sending it to /new")
+    var resp: string = await fetch(API_SERVER_NEW, {
+      method: "POST",
+      headers: {'Content-Type': 'application/json'}, 
+      credentials: "include",
+    }).then(res => res.json()
+    ).catch(err => console.log(`Error getting details ${err}`)
+    );
+    console.log(resp);
+    return
+  }
+
+  async login(loginRequest: LoginRequest): Promise<GameDetails> {
+    var resp: void | Response = await fetch(API_SERVER_LOGIN, {
+      method: "POST",
+      headers: {'Content-Type': 'application/json'}, 
+      body: JSON.stringify(loginRequest),
+      credentials: "include",
+    }).then(resp => {
+      if (resp.status === 200) {
+        console.log("Login Successful");
+        isLoggedIn.set(true);
+      } else if (resp.status === 401) {
+        console.log("Wrong password");
+      } else {
+        console.log(resp);
+      }
+    }).catch(err => console.log(`Error getting details ${err}`)
+    );
+    return
   }
 }

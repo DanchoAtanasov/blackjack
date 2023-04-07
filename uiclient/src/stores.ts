@@ -23,11 +23,17 @@ export type NewPlayerRequest = {
   CurrBet: number,
 }
 
+export type LoginRequest = {
+  username: string,
+  password: string,
+}
+
 export const currPlayerName = writable('');
 export const currTurn = writable('');
 export const buyin = writable(0);
 export const newPlayerRequestStore = writable<NewPlayerRequest>();
 export const isConnected = writable(false);
+export const isLoggedIn = writable(false);
 export const hasGameStarted = writable(false);
 export const isGameOver = writable(false);
 export const currBetStore = writable(0);

@@ -3,12 +3,15 @@
   import HitButton from './lib/HitButton.svelte';
   import StandButton from './lib/StandButton.svelte';
   import PlayerHand from './lib/PlayerHand.svelte';
-  import { currPlayerName, playersStore, isConnected, hasGameStarted, isGameOver } from './stores';
+  import { currPlayerName, playersStore, isConnected, isLoggedIn, hasGameStarted, isGameOver } from './stores';
 
   import { onMount } from 'svelte';
   import Session from './Session';
   import DealerHand from './lib/DealerHand.svelte';
   import CurrentBet from './lib/CurrentBet.svelte';
+  import LoginButton from './lib/LoginButton.svelte';
+
+  var session = new Session();
 
   function checkTokenCookie() {
     console.log(document.cookie);
@@ -16,12 +19,16 @@
 
   onMount(async () => {
     checkTokenCookie();
+    session.callNew();
   });
 
-  var session = new Session();
 
   function handleStartGame(event) {
     session.connect();
+  }
+
+  function handleLogin(event) {
+    session.login(event.detail);
   }
 
   function sendHit() {
@@ -38,7 +45,9 @@
 <main>
   <h1>Welcome to Blackjack</h1>
 
-  {#if !$isConnected}
+  {#if !$isLoggedIn}
+    <LoginButton on:login={handleLogin}/>
+  {:else if !$isConnected}
     <PlayButton on:start-game={handleStartGame}/>
   {:else if !$hasGameStarted && !$isGameOver}
     <p>Name is {$currPlayerName}, waiting for game to begin...</p>

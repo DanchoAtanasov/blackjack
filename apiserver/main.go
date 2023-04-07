@@ -42,6 +42,11 @@ type PlayerRequest struct {
 	CurrBet int
 }
 
+type LoginRequest struct {
+	Username string
+	Password string
+}
+
 type BlackjackServerDetails struct {
 	GameServer string
 	Token      string
@@ -67,6 +72,47 @@ func new(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(response))
 }
 
+func login(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("got %s /login request\n", r.Method)
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("could not read body %s\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	fmt.Printf("body: %s\n", body)
+
+	var loginRequest LoginRequest
+	err = json.Unmarshal([]byte(body), &loginRequest)
+	if err != nil {
+		fmt.Printf("could not parse login request")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("got %s, %s\n", loginRequest.Username, loginRequest.Password)
+
+	if loginRequest.Password != "1234" {
+		fmt.Printf("Wrong password")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	fmt.Println("Authorized")
+
+	redisToken := uuid.NewString()
+	token := generateJwt(redisToken)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		Expires:  time.Now().Add(1 * time.Hour),
+		Secure:   true,
+		HttpOnly: false,
+		SameSite: http.SameSiteNoneMode,
+		Domain:   fmt.Sprintf(".%s", DOMAIN),
+	})
+}
+
 func play(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got %s /play request\n", r.Method)
 	fmt.Println(r.Cookies())
@@ -86,7 +132,7 @@ func play(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got %s, %d, %d\n", playerRequest.Name, playerRequest.BuyIn, playerRequest.CurrBet)
 
 	redisToken := uuid.NewString()
-	token := generateJwt(playerRequest, redisToken)
+	token := generateJwt(redisToken)
 	fmt.Println(token)
 
 	response := BlackjackServerDetails{GameServer: BLACKJACK_SERVER_PATH, Token: token}
@@ -108,17 +154,14 @@ func play(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func generateJwt(playerRequest PlayerRequest, uuid string) string {
+func generateJwt(uuid string) string {
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"token": uuid,
-		// "name": playerRequest.Name,
-		// "buyin":   playerRequest.BuyIn,
-		// "currbet": playerRequest.CurrBet,
-		"nbf": time.Now().Unix(),
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(1 * time.Hour).Unix(),
+		"nbf":   time.Now().Unix(),
+		"iat":   time.Now().Unix(),
+		"exp":   time.Now().Add(1 * time.Hour).Unix(),
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
@@ -127,8 +170,6 @@ func generateJwt(playerRequest PlayerRequest, uuid string) string {
 		fmt.Printf("Token signing failed %s/n", err)
 		return ""
 	}
-
-	fmt.Printf("Generated token: %s\n", tokenString)
 	return tokenString
 }
 
@@ -149,14 +190,6 @@ func storeSession(token string, playerRequest PlayerRequest) {
 		fmt.Println(err)
 	}
 
-}
-
-func wrapCors(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Before")
-		h.ServeHTTP(w, r) // call original
-		// fmt.Println("After")
-	})
 }
 
 // Middleware that handles CORS
@@ -183,6 +216,7 @@ func main() {
 	mux.HandleFunc("/", getRoot)
 	mux.HandleFunc("/play", play)
 	mux.HandleFunc("/new", new)
+	mux.HandleFunc("/login", login)
 	corsMux := NewCors(mux)
 
 	fmt.Printf("Api server started on port %d\n", port)
