@@ -1,6 +1,7 @@
 package main
 
 import (
+	"apiserver/models"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 )
 
 const (
+	// host = "localhost"
 	host     = "database"
 	port     = 5432
 	user     = "postgres"
@@ -42,7 +44,6 @@ func (database *Database) query() {
 		fmt.Println("query failed")
 	}
 	defer result.Close()
-	fmt.Println(result)
 }
 
 func (database *Database) connect() error {
@@ -138,3 +139,30 @@ func (database *UsersDatabase) addRootUser() error {
 	fmt.Println("Root user created")
 	return nil
 }
+
+func (database *UsersDatabase) getUser(username string) (models.User, error) {
+	stmt, err := database.db.Prepare("SELECT id, username, password FROM users WHERE username = $1")
+	defer stmt.Close()
+
+	var db_username string
+	var password string
+	var id int
+	err = stmt.QueryRow(username).Scan(&id, &db_username, &password)
+	if err != nil {
+		return models.User{}, errors.New("User not found")
+	}
+
+	user := models.User{Id: id, Username: db_username, Password: password}
+	return user, nil
+}
+
+// func main() {
+// 	// var err error
+// 	db, err := NewUsersDatabase()
+// 	if err != nil {
+// 		fmt.Printf("error couldn't connect to database: %s\n", err)
+// 	}
+// 	defer db.Close()
+// 	// db.query()
+// 	db.getUserData("root")
+// }

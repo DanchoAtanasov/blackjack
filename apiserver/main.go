@@ -29,12 +29,16 @@ func loadPrivateKey() *rsa.PrivateKey {
 	return key
 }
 
+const FRONT_END_PORT int = 5173
+const PORT int = 3333
+
 var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
 var PRIVATE_KEY *rsa.PrivateKey = loadPrivateKey()
 var DOMAIN string = getEnv("DOMAIN", "blackjack.gg")
-var FRONT_END_PORT int = 5173
 var FRONT_END_URL string = fmt.Sprintf("https://%s:%d", DOMAIN, FRONT_END_PORT)
 var BLACKJACK_SERVER_PATH string = fmt.Sprintf("%s/blackjack/", DOMAIN)
+
+var db UsersDatabase
 
 type PlayerRequest struct {
 	Name    string
@@ -90,9 +94,11 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("got %s, %s\n", loginRequest.Username, loginRequest.Password)
+	// db.query()
+	user, err := db.getUser(loginRequest.Username)
 
-	if loginRequest.Password != "1234" {
-		fmt.Printf("Wrong password")
+	if loginRequest.Password != user.Password {
+		fmt.Println("Wrong password")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -211,15 +217,8 @@ func NewCors(handlerToWrap http.Handler) *Cors {
 }
 
 func main() {
-	port := 3333
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", getRoot)
-	mux.HandleFunc("/play", play)
-	mux.HandleFunc("/new", new)
-	mux.HandleFunc("/login", login)
-	corsMux := NewCors(mux)
-
-	db, err := NewUsersDatabase()
+	var err error
+	db, err = NewUsersDatabase()
 	if err != nil {
 		fmt.Printf("error couldn't connect to database: %s\n", err)
 		os.Exit(1)
@@ -227,8 +226,15 @@ func main() {
 	defer db.Close()
 	db.query()
 
-	fmt.Printf("Api server started on port %d\n", port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), corsMux)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", getRoot)
+	mux.HandleFunc("/play", play)
+	mux.HandleFunc("/new", new)
+	mux.HandleFunc("/login", login)
+	corsMux := NewCors(mux)
+
+	fmt.Printf("Api server started on port %d\n", PORT)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", PORT), corsMux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 	} else if err != nil {
