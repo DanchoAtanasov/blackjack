@@ -51,6 +51,12 @@ type LoginRequest struct {
 	Password string
 }
 
+// Same as LoginRequest for now, could add password reenter
+type SignupRequest struct {
+	Username string
+	Password string
+}
+
 type BlackjackServerDetails struct {
 	GameServer string
 	Token      string
@@ -65,26 +71,21 @@ func setCorsHeaders(w http.ResponseWriter) {
 }
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got / request\n")
 	io.WriteString(w, "Time to play some blackjack huh\n")
 }
 
 func new(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got %s /new request\n", r.Method)
 	fmt.Println(r.Cookies())
 	response, _ := json.Marshal("new")
 	io.WriteString(w, string(response))
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got %s /login request\n", r.Method)
-
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("could not read body %s\n", err)
 		w.WriteHeader(http.StatusBadRequest)
 	}
-	fmt.Printf("body: %s\n", body)
 
 	var loginRequest LoginRequest
 	err = json.Unmarshal([]byte(body), &loginRequest)
@@ -93,9 +94,13 @@ func login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("got %s, %s\n", loginRequest.Username, loginRequest.Password)
-	// db.query()
+
 	user, err := db.getUser(loginRequest.Username)
+	if err != nil {
+		fmt.Printf("Cannot get user %s, %s\n", loginRequest.Username, err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	if loginRequest.Password != user.Password {
 		fmt.Println("Wrong password")
@@ -119,8 +124,25 @@ func login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func signup(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("could not read body %s\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	fmt.Printf("body: %s\n", body)
+
+	var signupRequest SignupRequest
+	err = json.Unmarshal([]byte(body), &signupRequest)
+	if err != nil {
+		fmt.Printf("could not parse singup request")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	db.addUser(signupRequest.Username, signupRequest.Password)
+}
+
 func play(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got %s /play request\n", r.Method)
 	fmt.Println(r.Cookies())
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -205,6 +227,7 @@ type Cors struct {
 
 func (l *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	setCorsHeaders(w)
+	fmt.Printf("Got %s %s\n", r.Method, r.RequestURI)
 	if r.Method == "OPTIONS" {
 		io.WriteString(w, "")
 		return
@@ -231,6 +254,7 @@ func main() {
 	mux.HandleFunc("/play", play)
 	mux.HandleFunc("/new", new)
 	mux.HandleFunc("/login", login)
+	mux.HandleFunc("/signup", signup)
 	corsMux := NewCors(mux)
 
 	fmt.Printf("Api server started on port %d\n", PORT)

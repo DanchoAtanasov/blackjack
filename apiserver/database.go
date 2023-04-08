@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 )
 
@@ -110,7 +111,7 @@ func (database *UsersDatabase) createTable() error {
 	fmt.Println("Creating users table")
 	_, err := database.db.Exec(`
 		CREATE TABLE users(
-			id INT PRIMARY KEY,
+			id VARCHAR(50) PRIMARY KEY,
 			username VARCHAR(50) UNIQUE NOT NULL,
 			password VARCHAR(100) NOT NULL
 		);`,
@@ -129,7 +130,7 @@ func (database *UsersDatabase) addRootUser() error {
 		INSERT INTO users(
 			id, username, password
 		) VALUES (
-			1, 'root', 'pass'
+			'f4e483f4-da9c-49aa-aea0-61c416515e39', 'root', 'pass'
 		);`,
 	)
 	if err != nil {
@@ -144,15 +145,35 @@ func (database *UsersDatabase) getUser(username string) (models.User, error) {
 	stmt, err := database.db.Prepare("SELECT id, username, password FROM users WHERE username = $1")
 	defer stmt.Close()
 
-	var db_username string
-	var password string
-	var id int
+	// Try using an interface to unpack User struct
+	var (
+		id          string
+		db_username string
+		password    string
+	)
 	err = stmt.QueryRow(username).Scan(&id, &db_username, &password)
 	if err != nil {
+		fmt.Println(err)
 		return models.User{}, errors.New("User not found")
 	}
 
 	user := models.User{Id: id, Username: db_username, Password: password}
+	return user, nil
+}
+
+func (database *UsersDatabase) addUser(username string, password string) (models.User, error) {
+	stmt, err := database.db.Prepare(`
+		INSERT INTO users (id, username, password) VALUES ($1, $2, $3)`,
+	)
+	defer stmt.Close()
+
+	id := uuid.NewString()
+	_, err = stmt.Exec(id, username, password)
+	if err != nil {
+		return models.User{}, errors.New("Cannot add user")
+	}
+
+	user := models.User{Id: id, Username: username, Password: password}
 	return user, nil
 }
 
