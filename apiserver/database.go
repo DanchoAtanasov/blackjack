@@ -130,7 +130,8 @@ func (database *UsersDatabase) addRootUser() error {
 		INSERT INTO users(
 			id, username, password
 		) VALUES (
-			'f4e483f4-da9c-49aa-aea0-61c416515e39', 'root', 'pass'
+			'f4e483f4-da9c-49aa-aea0-61c416515e39', 'root',
+			'$2a$10$9sdxTP5UUq3WyApkEdXrb..H5Vvdzo68IG6eOx0zyj1Xkqk5pVL/W'
 		);`,
 	)
 	if err != nil {
@@ -168,12 +169,13 @@ func (database *UsersDatabase) addUser(username string, password string) (models
 	defer stmt.Close()
 
 	id := uuid.NewString()
-	_, err = stmt.Exec(id, username, password)
+	hashed_password, _ := HashPassword(password)
+	_, err = stmt.Exec(id, username, hashed_password)
 	if err != nil {
 		return models.User{}, errors.New("Cannot add user")
 	}
 
-	user := models.User{Id: id, Username: username, Password: password}
+	user := models.User{Id: id, Username: username, Password: hashed_password}
 	return user, nil
 }
 

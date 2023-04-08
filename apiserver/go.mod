@@ -12,4 +12,5 @@ require (
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.22.1 // indirect
+	golang.org/x/crypto v0.8.0 // indirect
 )

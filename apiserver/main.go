@@ -102,7 +102,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if loginRequest.Password != user.Password {
+	if !CheckPasswordHash(loginRequest.Password, user.Password) {
 		fmt.Println("Wrong password")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -130,7 +130,6 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("could not read body %s\n", err)
 		w.WriteHeader(http.StatusBadRequest)
 	}
-	fmt.Printf("body: %s\n", body)
 
 	var signupRequest SignupRequest
 	err = json.Unmarshal([]byte(body), &signupRequest)
