@@ -20,6 +20,11 @@ type GameDetails = {
   GameServer: string,
 }
 
+type CookieLoginResponse = {
+  Useid: string,
+  Username: string,
+}
+
 type Message = {
   type: string,
   message: string,
@@ -196,24 +201,28 @@ export default class Session {
 
   async cookieLogin() {
     console.log("Found cookie, sending it to /cookie")
-    var resp: string = await fetch(API_SERVER_COOKIE, {
+    var resp: CookieLoginResponse = await fetch(API_SERVER_COOKIE, {
       method: "POST",
       headers: {'Content-Type': 'application/json'}, 
       credentials: "include",
     }).then(resp => {
       if (resp.status === 200) {
         console.log("Login Successful");
-        currPlayerName.set("Cookie");
         isLoggedIn.set(true);
         showLogin.set(false);
       } else if (resp.status === 401) {
         console.log("Wrong password");
+        throw new Error("Cookie login error")
       } else {
         console.log(resp);
+        throw new Error("Cookie login error")
       }
+      return resp
+    }).then(resp => resp.json()).then(respJson => {
+      console.log(respJson);
+      currPlayerName.set(respJson.Username);
     }).catch(err => console.log(`Error getting details ${err}`)
     );
-    console.log(resp);
     return
   }
 

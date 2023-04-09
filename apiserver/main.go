@@ -68,7 +68,7 @@ type BlackjackServerDetails struct {
 }
 
 type CookieLoginResponse struct {
-	Token    string
+	// Token    string
 	Useid    string
 	Username string
 }
