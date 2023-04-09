@@ -41,9 +41,14 @@ var BLACKJACK_SERVER_PATH string = fmt.Sprintf("%s/blackjack/", DOMAIN)
 var db UsersDatabase
 
 type PlayerRequest struct {
-	Name    string
+	// Name    string
 	BuyIn   int
 	CurrBet int
+}
+
+type PlayerSessionInformation struct {
+	Name string
+	PlayerRequest
 }
 
 type LoginRequest struct {
@@ -62,6 +67,15 @@ type BlackjackServerDetails struct {
 	Token      string
 }
 
+type CookieLoginResponse struct {
+	Token    string
+	Useid    string
+	Username string
+}
+
+var UserTokenNotFound = errors.New("user-token not found")
+var UserTokenCannotBeParsed = errors.New("user-token cannot be parsed")
+
 func setCorsHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", FRONT_END_URL)
 	w.Header().Set("Access-Control-Allow-Methods", "GET,POST")
@@ -74,9 +88,42 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Time to play some blackjack huh\n")
 }
 
-func new(w http.ResponseWriter, r *http.Request) {
+func parseUserTokenFromRequest(r *http.Request) (UserToken, error) {
+	cookie, err := r.Cookie("user-token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			fmt.Println("user-token cookie not found")
+			return UserToken{}, UserTokenNotFound
+		} else {
+			fmt.Println(err)
+			return UserToken{}, UserTokenNotFound
+		}
+	}
+
+	userToken, err := parseUserToken(cookie.Value)
+	if err != nil {
+		return UserToken{}, UserTokenCannotBeParsed
+	}
+	return userToken, nil
+}
+
+func cookieLogin(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Cookies())
-	response, _ := json.Marshal("new")
+	userToken, err := parseUserTokenFromRequest(r)
+	if err != nil {
+		fmt.Println("cookie not valid")
+		if err == UserTokenNotFound {
+			// TODO: revise eror codes
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	}
+
+	resp := CookieLoginResponse{Useid: userToken.UserId, Username: userToken.Username}
+	response, _ := json.Marshal(resp)
 	io.WriteString(w, string(response))
 }
 
@@ -109,12 +156,11 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Authorized")
 
-	redisToken := uuid.NewString()
-	token := generateJwt(redisToken)
+	userToken := generateUserToken(user.Id, user.Username)
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    token,
+		Name:     "user-token",
+		Value:    userToken,
 		Path:     "/",
 		Expires:  time.Now().Add(1 * time.Hour),
 		Secure:   true,
@@ -138,11 +184,30 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	db.addUser(signupRequest.Username, signupRequest.Password)
+
+	_, err = db.addUser(signupRequest.Username, signupRequest.Password)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func play(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Cookies())
+
+	userToken, err := parseUserTokenFromRequest(r)
+	if err != nil {
+		fmt.Println("cookie not valid")
+		if err == UserTokenNotFound {
+			// TODO: revise eror codes
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	}
+	fmt.Println("User token in valid")
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -156,58 +221,42 @@ func play(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("could not parse body")
 		return
 	}
-	fmt.Printf("got %s, %d, %d\n", playerRequest.Name, playerRequest.BuyIn, playerRequest.CurrBet)
+	fmt.Printf("got %s, %d, %d\n", userToken.Username, playerRequest.BuyIn, playerRequest.CurrBet)
 
 	redisToken := uuid.NewString()
-	token := generateJwt(redisToken)
-	fmt.Println(token)
+	sessionToken := generateSessionToken(redisToken)
 
-	response := BlackjackServerDetails{GameServer: BLACKJACK_SERVER_PATH, Token: token}
-	responseString, _ := json.Marshal(response)
 	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    token,
+		Name:     "session-token",
+		Value:    sessionToken,
 		Path:     "/",
-		Expires:  time.Now().Add(5 * time.Hour),
+		Expires:  time.Now().Add(1 * time.Hour),
 		Secure:   true,
 		HttpOnly: false,
 		SameSite: http.SameSiteNoneMode,
 		Domain:   fmt.Sprintf(".%s", DOMAIN),
 	})
-	fmt.Println("cookie set")
+
+	response := BlackjackServerDetails{GameServer: BLACKJACK_SERVER_PATH, Token: sessionToken}
+	responseString, _ := json.Marshal(response)
 	io.WriteString(w, string(responseString))
-
-	go storeSession(redisToken, playerRequest)
-
-}
-
-func generateJwt(uuid string) string {
-	// Create a new token object, specifying signing method and the claims
-	// you would like it to contain.
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"token": uuid,
-		"nbf":   time.Now().Unix(),
-		"iat":   time.Now().Unix(),
-		"exp":   time.Now().Add(1 * time.Hour).Unix(),
-	})
-
-	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString(PRIVATE_KEY)
-	if err != nil {
-		fmt.Printf("Token signing failed %s/n", err)
-		return ""
+	playerSessionInformation := PlayerSessionInformation{
+		Name:          userToken.Username,
+		PlayerRequest: playerRequest,
 	}
-	return tokenString
+
+	go storeSession(redisToken, playerSessionInformation)
+
 }
 
-func storeSession(token string, playerRequest PlayerRequest) {
+func storeSession(token string, playerSessionInformation PlayerSessionInformation) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:6379", REDIS_HOST),
 		Password: "",
 		DB:       0,
 	})
 
-	json, err := json.Marshal(playerRequest)
+	json, err := json.Marshal(playerSessionInformation)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -251,7 +300,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getRoot)
 	mux.HandleFunc("/play", play)
-	mux.HandleFunc("/new", new)
+	mux.HandleFunc("/cookie", cookieLogin)
 	mux.HandleFunc("/login", login)
 	mux.HandleFunc("/signup", signup)
 	corsMux := NewCors(mux)

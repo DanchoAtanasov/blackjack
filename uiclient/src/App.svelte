@@ -24,7 +24,11 @@
 
   onMount(async () => {
     checkTokenCookie();
-    session.callNew();
+    if (document.cookie != "") {
+      session.cookieLogin();
+    } else {
+      console.log(document.cookie);
+    }
   });
 
 

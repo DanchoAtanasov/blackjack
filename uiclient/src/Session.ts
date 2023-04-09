@@ -7,7 +7,7 @@ import type { Player, Hand } from './stores';
 
 
 const API_SERVER_URL = "https://blackjack.gg/api/play"
-const API_SERVER_NEW = "https://blackjack.gg/api/new"
+const API_SERVER_COOKIE = "https://blackjack.gg/api/cookie"
 const API_SERVER_LOGIN = "https://blackjack.gg/api/login"
 const API_SERVER_SIGNUP = "https://blackjack.gg/api/signup"
 
@@ -180,6 +180,8 @@ export default class Session {
   async getGameDetails(): Promise<GameDetails> {
     console.log("Send player data to api server")
     const newPlayerRequest: NewPlayerRequest = get(newPlayerRequestStore);
+    console.log(newPlayerRequest);
+    
 
     var gameDetails: GameDetails = await fetch(API_SERVER_URL, {
       method: "POST",
@@ -192,14 +194,24 @@ export default class Session {
     return gameDetails
   }
 
-  async callNew() {
-    console.log("Found cookie, sending it to /new")
-    var resp: string = await fetch(API_SERVER_NEW, {
+  async cookieLogin() {
+    console.log("Found cookie, sending it to /cookie")
+    var resp: string = await fetch(API_SERVER_COOKIE, {
       method: "POST",
       headers: {'Content-Type': 'application/json'}, 
       credentials: "include",
-    }).then(res => res.json()
-    ).catch(err => console.log(`Error getting details ${err}`)
+    }).then(resp => {
+      if (resp.status === 200) {
+        console.log("Login Successful");
+        currPlayerName.set("Cookie");
+        isLoggedIn.set(true);
+        showLogin.set(false);
+      } else if (resp.status === 401) {
+        console.log("Wrong password");
+      } else {
+        console.log(resp);
+      }
+    }).catch(err => console.log(`Error getting details ${err}`)
     );
     console.log(resp);
     return
