@@ -1,6 +1,6 @@
 import { 
   dealerHandStore, playersStore, isConnected, hasGameStarted, NewPlayerRequest,
-  newPlayerRequestStore, isGameOver, currBetStore, currTurn, LoginRequest, isLoggedIn
+  newPlayerRequestStore, isGameOver, currBetStore, currTurn, LoginRequest, isLoggedIn, currPlayerName, showLogin, showSignup
 } from './stores'
 import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
@@ -9,6 +9,7 @@ import type { Player, Hand } from './stores';
 const API_SERVER_URL = "https://blackjack.gg/api/play"
 const API_SERVER_NEW = "https://blackjack.gg/api/new"
 const API_SERVER_LOGIN = "https://blackjack.gg/api/login"
+const API_SERVER_SIGNUP = "https://blackjack.gg/api/signup"
 
 type Token = {
   Token: string,
@@ -213,9 +214,32 @@ export default class Session {
     }).then(resp => {
       if (resp.status === 200) {
         console.log("Login Successful");
+        currPlayerName.set(loginRequest.username);
         isLoggedIn.set(true);
+        showLogin.set(false);
       } else if (resp.status === 401) {
         console.log("Wrong password");
+      } else {
+        console.log(resp);
+      }
+    }).catch(err => console.log(`Error getting details ${err}`)
+    );
+    return
+  }
+
+  async signup(loginRequest: LoginRequest): Promise<GameDetails> {
+    var resp: void | Response = await fetch(API_SERVER_SIGNUP, {
+      method: "POST",
+      headers: {'Content-Type': 'application/json'}, 
+      body: JSON.stringify(loginRequest),
+      credentials: "include",
+    }).then(resp => {
+      if (resp.status === 200) {
+        console.log("Signup Successful");
+        // currPlayerName.set(loginRequest.username);
+        // isLoggedIn.set(true);
+        showLogin.set(true);
+        showSignup.set(false);
       } else {
         console.log(resp);
       }

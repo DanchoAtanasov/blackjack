@@ -3,13 +3,18 @@
   import HitButton from './lib/HitButton.svelte';
   import StandButton from './lib/StandButton.svelte';
   import PlayerHand from './lib/PlayerHand.svelte';
-  import { currPlayerName, playersStore, isConnected, isLoggedIn, hasGameStarted, isGameOver } from './stores';
+  import { 
+    currPlayerName, playersStore, isConnected, isLoggedIn, hasGameStarted, isGameOver, showLogin,
+    showSignup,
+  } from './stores';
 
   import { onMount } from 'svelte';
   import Session from './Session';
   import DealerHand from './lib/DealerHand.svelte';
   import CurrentBet from './lib/CurrentBet.svelte';
   import LoginButton from './lib/LoginButton.svelte';
+  import LandingPage from './lib/LandingPage.svelte';
+  import SignupButton from './lib/SignupButton.svelte';
 
   var session = new Session();
 
@@ -31,6 +36,10 @@
     session.login(event.detail);
   }
 
+  function handleSignUp(event) {
+    session.signup(event.detail);
+  }
+
   function sendHit() {
     session.sendHit();
   }
@@ -45,8 +54,12 @@
 <main>
   <h1>Welcome to Blackjack</h1>
 
-  {#if !$isLoggedIn}
+  {#if $showLogin}
     <LoginButton on:login={handleLogin}/>
+  {:else if $showSignup}
+    <SignupButton on:signup={handleSignUp}/>
+  {:else if !$isLoggedIn}
+    <LandingPage on:login={handleLogin}/>
   {:else if !$isConnected}
     <PlayButton on:start-game={handleStartGame}/>
   {:else if !$hasGameStarted && !$isGameOver}
