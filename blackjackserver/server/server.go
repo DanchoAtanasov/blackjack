@@ -96,20 +96,29 @@ func (server *Server) GetRoom() *Room {
 	return server.room
 }
 
+// Process new players and return new game if necessary
 func (server *Server) WaitForPlayers() *Room {
 	server.newConnectionCond.L.Lock()
 	defer server.newConnectionCond.L.Unlock()
 
-	for len(server.connQueue) < settings.RoomSize {
+	for {
+		// Wait for a new connection
 		server.newConnectionCond.Wait()
+
+		fmt.Println("Player found")
+		server.room.AddNewPlayerConn(server.connQueue[0])
+		server.connQueue = server.connQueue[1:]
+
+		// If it's the first player return room to start the game
+		if len(server.room.playerConns) == 1 {
+			return server.room
+		}
+
+		// Room is full, make a new one
+		if len(server.room.playerConns) >= settings.RoomSize {
+			server.room = MakeRoom()
+		}
 	}
-
-	fmt.Println("Wait is over!, queue len is ", len(server.connQueue))
-	room := MakeRoom()
-	room.playerConns = server.connQueue[:settings.RoomSize]
-	server.connQueue = server.connQueue[settings.RoomSize:]
-
-	return room
 }
 
 func (server *Server) Serve() {
@@ -121,6 +130,7 @@ func (server *Server) Serve() {
 			conn, _, _, err := ws.UpgradeHTTP(r, w)
 			if err != nil {
 				fmt.Println("Upgrade error, ", err)
+				return
 			}
 
 			fmt.Println("New player connected")

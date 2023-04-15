@@ -41,6 +41,10 @@ func (room *Room) GetCurrPlayerConn() *PlayerConn {
 	return &room.playerConns[0]
 }
 
+func (room *Room) AddNewPlayerConn(newPlayerConn PlayerConn) {
+	room.playerConns = append(room.playerConns, newPlayerConn)
+}
+
 func (room *Room) RemoveDisconnectedPlayer(position int) {
 	// TODO improve player diconnecting/rotating logic
 	if len(room.playerConns) <= 1 {

@@ -161,11 +161,13 @@ export default class Session {
         console.log("Game over");
         hasGameStarted.set(false);
         isGameOver.set(true);
+        // Doesn't seem to be closing the connection
         this.socket.close();
         break;
       case "IN":
         console.log("GAME IN: asking if playing the hand");
         this.sendIn();
+        hasGameStarted.set(true);
         break;
       default:
         console.log("Game message not recognized");
@@ -257,8 +259,6 @@ export default class Session {
     }).then(resp => {
       if (resp.status === 200) {
         console.log("Signup Successful");
-        // currPlayerName.set(loginRequest.username);
-        // isLoggedIn.set(true);
         showLogin.set(true);
         showSignup.set(false);
       } else {
