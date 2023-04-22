@@ -41,14 +41,13 @@ var BLACKJACK_SERVER_PATH string = fmt.Sprintf("%s/blackjack/", DOMAIN)
 var db UsersDatabase
 
 type PlayerRequest struct {
-	// Name    string
-	BuyIn   int
 	CurrBet int
 }
 
 type PlayerSessionInformation struct {
-	Name string
-	PlayerRequest
+	Name    string
+	BuyIn   int
+	CurrBet int
 }
 
 type LoginRequest struct {
@@ -207,7 +206,7 @@ func play(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	fmt.Println("User token in valid")
+	fmt.Println("User token is valid")
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -221,7 +220,14 @@ func play(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("could not parse body")
 		return
 	}
-	fmt.Printf("got %s, %d, %d\n", userToken.Username, playerRequest.BuyIn, playerRequest.CurrBet)
+	fmt.Printf("got %s, %d\n", userToken.Username, playerRequest.CurrBet)
+
+	fmt.Println("Getting user from database")
+	user, err := db.getUser(userToken.Username)
+	if err != nil {
+		fmt.Printf("Cannot get user %s, %s\n", userToken.Username, err)
+		return
+	}
 
 	redisToken := uuid.NewString()
 	sessionToken := generateSessionToken(redisToken)
@@ -241,8 +247,9 @@ func play(w http.ResponseWriter, r *http.Request) {
 	responseString, _ := json.Marshal(response)
 	io.WriteString(w, string(responseString))
 	playerSessionInformation := PlayerSessionInformation{
-		Name:          userToken.Username,
-		PlayerRequest: playerRequest,
+		Name:    userToken.Username,
+		BuyIn:   user.BuyIn,
+		CurrBet: playerRequest.CurrBet,
 	}
 
 	go storeSession(redisToken, playerSessionInformation)

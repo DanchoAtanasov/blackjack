@@ -113,7 +113,8 @@ func (database *UsersDatabase) createTable() error {
 		CREATE TABLE users(
 			id VARCHAR(50) PRIMARY KEY,
 			username VARCHAR(50) UNIQUE NOT NULL,
-			password VARCHAR(100) NOT NULL
+			password VARCHAR(100) NOT NULL,
+			buyin INTEGER CHECK (buyin >= 0)
 		);`,
 	)
 	if err != nil {
@@ -128,10 +129,12 @@ func (database *UsersDatabase) addRootUser() error {
 	fmt.Println("Create root user")
 	_, err := database.db.Exec(`
 		INSERT INTO users(
-			id, username, password
+			id, username, password, buyin
 		) VALUES (
-			'f4e483f4-da9c-49aa-aea0-61c416515e39', 'root',
-			'$2a$10$9sdxTP5UUq3WyApkEdXrb..H5Vvdzo68IG6eOx0zyj1Xkqk5pVL/W'
+			'f4e483f4-da9c-49aa-aea0-61c416515e39',
+			'root',
+			'$2a$10$9sdxTP5UUq3WyApkEdXrb..H5Vvdzo68IG6eOx0zyj1Xkqk5pVL/W',
+			1000
 		);`,
 	)
 	if err != nil {
@@ -143,7 +146,9 @@ func (database *UsersDatabase) addRootUser() error {
 }
 
 func (database *UsersDatabase) getUser(username string) (models.User, error) {
-	stmt, err := database.db.Prepare("SELECT id, username, password FROM users WHERE username = $1")
+	stmt, err := database.db.Prepare(`
+		SELECT id, username, password, buyin FROM users WHERE username = $1`,
+	)
 	defer stmt.Close()
 
 	// Try using an interface to unpack User struct
@@ -151,20 +156,21 @@ func (database *UsersDatabase) getUser(username string) (models.User, error) {
 		id          string
 		db_username string
 		password    string
+		buyin       int
 	)
-	err = stmt.QueryRow(username).Scan(&id, &db_username, &password)
+	err = stmt.QueryRow(username).Scan(&id, &db_username, &password, &buyin)
 	if err != nil {
 		fmt.Println(err)
 		return models.User{}, errors.New("User not found")
 	}
 
-	user := models.User{Id: id, Username: db_username, Password: password}
+	user := models.User{Id: id, Username: db_username, Password: password, BuyIn: buyin}
 	return user, nil
 }
 
 func (database *UsersDatabase) addUser(username string, password string) (models.User, error) {
 	stmt, err := database.db.Prepare(`
-		INSERT INTO users (id, username, password) VALUES ($1, $2, $3)`,
+		INSERT INTO users (id, username, password, buyin) VALUES ($1, $2, $3, 1000)`,
 	)
 	defer stmt.Close()
 
@@ -175,7 +181,7 @@ func (database *UsersDatabase) addUser(username string, password string) (models
 		return models.User{}, errors.New("Cannot add user")
 	}
 
-	user := models.User{Id: id, Username: username, Password: hashed_password}
+	user := models.User{Id: id, Username: username, Password: hashed_password, BuyIn: 1000}
 	return user, nil
 }
 

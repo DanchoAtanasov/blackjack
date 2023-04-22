@@ -6,13 +6,8 @@
 
   const dispatch = createEventDispatcher();
 
-  var buyinInput;
-
   function play() {
-    console.log(get(currBetStore));
-    
     newPlayerRequestStore.set({
-      BuyIn: Number(buyinInput),
       CurrBet: get(currBetStore),
     });
 
@@ -25,8 +20,8 @@
 <h2> Fancy a game?</h2>
 
 <form class="content">
-  <input type="text" bind:value={buyinInput} placeholder="Buy In"/>
-  <input type="number" bind:value={$currBetStore} placeholder="Current Bet"/>
+  <label for="current-bet">Starting bet:</label>
+  <input type="number" id="current-bet" bind:value={$currBetStore}/>
 </form>
 <button on:click={play}>
   Play
@@ -37,6 +32,9 @@
   input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
+  }
+  #current-bet {
+    width: 40px;
   }
 </style>
   

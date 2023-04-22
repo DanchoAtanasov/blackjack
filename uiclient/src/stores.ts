@@ -18,7 +18,6 @@ export type Player = {
 }
 
 export type NewPlayerRequest = {
-  BuyIn: number,
   CurrBet: number,
 }
 
