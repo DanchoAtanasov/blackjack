@@ -21,7 +21,8 @@
 
 </script>
 
-<h3>Nice to see you again, {$currPlayerName}. Fancy a game?</h3>
+<h2>Nice to see you again, {$currPlayerName}</h2>
+<h2> Fancy a game?</h2>
 
 <form class="content">
   <input type="text" bind:value={buyinInput} placeholder="Buy In"/>

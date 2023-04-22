@@ -17,6 +17,7 @@
 
 </script>
 
+<h1>Welcome to Blackjack</h1>
 
 <button on:click={handleShowLogin}>
   Login

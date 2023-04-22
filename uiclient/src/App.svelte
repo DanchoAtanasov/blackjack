@@ -1,8 +1,5 @@
 <script lang="ts">
   import PlayButton from './lib/PlayButton.svelte';
-  import HitButton from './lib/HitButton.svelte';
-  import StandButton from './lib/StandButton.svelte';
-  import PlayerHand from './lib/PlayerHand.svelte';
   import { 
     currPlayerName, playersStore, isConnected, isLoggedIn, hasGameStarted, isGameOver, showLogin,
     showSignup,
@@ -10,11 +7,10 @@
 
   import { onMount } from 'svelte';
   import Session from './Session';
-  import DealerHand from './lib/DealerHand.svelte';
-  import CurrentBet from './lib/CurrentBet.svelte';
   import LoginButton from './lib/LoginButton.svelte';
   import LandingPage from './lib/LandingPage.svelte';
   import SignupButton from './lib/SignupButton.svelte';
+  import GameView from './lib/GameView.svelte';
 
   var session = new Session();
 
@@ -44,20 +40,16 @@
     session.signup(event.detail);
   }
 
-  function sendHit() {
+  function handleSendHit(event) {
     session.sendHit();
   }
 
-  function sendStand() {
+  function handleSendStand(event) {
     session.sendStand();
   }
-
-
 </script>
 
 <main>
-  <h1>Welcome to Blackjack</h1>
-
   {#if $showLogin}
     <LoginButton on:login={handleLogin}/>
   {:else if $showSignup}
@@ -71,21 +63,7 @@
   {:else if $isGameOver}
     <p> Game is over, final buyin: {$playersStore.get($currPlayerName).BuyIn} </p>
   {:else}
-    <p>Name is {$currPlayerName}, 
-      <!--TODO player data in store isn't quite ready by the time the game starts
-      reorder messages and remove the if check -->
-      {#if $playersStore.get($currPlayerName)}
-      buy in: {$playersStore.get($currPlayerName).BuyIn}
-      {/if}
-    </p>
-    <DealerHand></DealerHand>
-    <PlayerHand></PlayerHand>
-
-
-    <HitButton on:hit={sendHit}/>
-    <StandButton on:stand={sendStand}/>
-    <CurrentBet></CurrentBet>
-
+    <GameView on:hit={handleSendHit} on:stand={handleSendStand}></GameView>
   {/if}
 </main>
 

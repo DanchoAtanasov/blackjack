@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../apiserver"
+		},
+		{
+			"path": "../../blackjackserver"
+		},
+		{
+			"path": "../../client"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {}
+}
