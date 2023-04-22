@@ -1,4 +1,4 @@
-package main
+package tokens
 
 type UserToken struct {
 	UserId   string

@@ -1,6 +1,7 @@
-package main
+package database
 
 import (
+	"apiserver/hashing"
 	"apiserver/models"
 	"database/sql"
 	"errors"
@@ -13,9 +14,10 @@ import (
 
 const (
 	// host = "localhost"
-	host     = "database"
-	port     = 5432
-	user     = "postgres"
+	host = "database"
+	port = 5432
+	user = "postgres"
+	// TODO: use more secure password and change it to an env var
 	password = "superpassword"
 	// dbname   = "MyDatabase"
 
@@ -89,16 +91,16 @@ type UsersDatabase struct {
 	Database
 }
 
-func NewUsersDatabase() (UsersDatabase, error) {
+func NewUsersDatabase() (*UsersDatabase, error) {
 	database := UsersDatabase{}
 	database.connect()
 	if database.checkIfTableExists() {
-		return database, nil
+		return &database, nil
 	}
 	// Table does not exist, create it
 	database.createTable()
 	database.addRootUser()
-	return database, nil
+	return &database, nil
 }
 
 func (database *UsersDatabase) checkIfTableExists() bool {
@@ -145,7 +147,7 @@ func (database *UsersDatabase) addRootUser() error {
 	return nil
 }
 
-func (database *UsersDatabase) getUser(username string) (models.User, error) {
+func (database *UsersDatabase) GetUser(username string) (models.User, error) {
 	stmt, err := database.db.Prepare(`
 		SELECT id, username, password, buyin FROM users WHERE username = $1`,
 	)
@@ -168,14 +170,14 @@ func (database *UsersDatabase) getUser(username string) (models.User, error) {
 	return user, nil
 }
 
-func (database *UsersDatabase) addUser(username string, password string) (models.User, error) {
+func (database *UsersDatabase) AddUser(username string, password string) (models.User, error) {
 	stmt, err := database.db.Prepare(`
 		INSERT INTO users (id, username, password, buyin) VALUES ($1, $2, $3, 1000)`,
 	)
 	defer stmt.Close()
 
 	id := uuid.NewString()
-	hashed_password, _ := HashPassword(password)
+	hashed_password, _ := hashing.HashPassword(password)
 	_, err = stmt.Exec(id, username, hashed_password)
 	if err != nil {
 		return models.User{}, errors.New("Cannot add user")

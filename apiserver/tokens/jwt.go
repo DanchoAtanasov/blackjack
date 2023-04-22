@@ -1,4 +1,4 @@
-package main
+package tokens
 
 import (
 	"crypto/rsa"
@@ -10,15 +10,22 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+func loadPrivateKey() *rsa.PrivateKey {
+	keyData, _ := os.ReadFile("keys/key.pem")
+	key, _ := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	return key
+}
+
 func loadPublicKey() *rsa.PublicKey {
 	keyData, _ := os.ReadFile("keys/key.pub")
 	key, _ := jwt.ParseRSAPublicKeyFromPEM(keyData)
 	return key
 }
 
+var PRIVATE_KEY *rsa.PrivateKey = loadPrivateKey()
 var PUBLIC_KEY *rsa.PublicKey = loadPublicKey()
 
-func generateUserToken(userId string, username string) string {
+func GenerateUserToken(userId string, username string) string {
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
@@ -38,7 +45,7 @@ func generateUserToken(userId string, username string) string {
 	return tokenString
 }
 
-func generateSessionToken(redisToken string) string {
+func GenerateSessionToken(redisToken string) string {
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
@@ -57,7 +64,7 @@ func generateSessionToken(redisToken string) string {
 	return tokenString
 }
 
-func parseUserToken(tokenString string) (UserToken, error) {
+func ParseUserToken(tokenString string) (UserToken, error) {
 	claims, err := parseJwt(tokenString)
 	if err != nil {
 		fmt.Println("User token invalid")
