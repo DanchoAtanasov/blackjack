@@ -83,6 +83,16 @@ export default class Session {
     this.socket.send(JSON.stringify(standMessage));
   }
 
+  sendLeave() {
+    console.log("Sending leave");
+    var leaveMessage = {"type": "PlayerAction", "message": "Leave"}
+    this.socket.send(JSON.stringify(leaveMessage));
+    hasGameStarted.set(false);
+    isGameOver.set(true);
+    // Doesn't seem to be closing the connection
+    this.socket.close();
+  }
+
   addMessageListeners() {
     // Listen for messages
     this.socket.addEventListener('message', (event) => {

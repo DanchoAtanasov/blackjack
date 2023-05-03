@@ -21,6 +21,11 @@ func readPlayerAction(room *server.Room) string {
 		if input == messages.HIT_MSG || input == messages.STAND_MSG {
 			break
 		}
+		if input == messages.LEAVE_MSG {
+			fmt.Println("Got leave message, leaving")
+			return "Out"
+		}
+
 		if input == "EOF" {
 			return "Out"
 		}
@@ -161,7 +166,7 @@ func playRound(deck *models.Deck, room *server.Room) {
 	// Players' turn
 	for i := range players {
 		currPlayer := players[i]
-		room.Log.Printf("%s's turn, buy in: %d, bet: %d", currPlayer.Name, currPlayer.BuyIn, currPlayer.CurrentBet)
+		room.Log.Printf("%s's turn, buy in: %d, bet: %d", currPlayer.Name, currPlayer.BuyIn, currPlayer.CurrBet)
 
 		if currPlayer.Active {
 			playTurn(currPlayer, deck, room)
@@ -196,7 +201,8 @@ func playRoom(room *server.Room) {
 			break
 		}
 
-		room.Log.Printf("----------Round %d----------", round+1)
+		round += 1
+		room.Log.Printf("----------Round %d----------", round)
 
 		playRound(&deck, room)
 

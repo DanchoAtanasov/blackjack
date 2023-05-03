@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -60,13 +61,26 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	defer server.newConnectionMutex.Unlock()
 	fmt.Println("Registering player")
 
+	fmt.Println("Asking client for a session token")
+	var sessionJwt Token
+	msg := ReadData(*conn)
+	fmt.Printf("Received %s", msg)
+	err := json.Unmarshal([]byte(msg), &sessionJwt)
+	if err != nil {
+		fmt.Println("Failed to unmarshal")
+		// TODO: handle failure
+	}
+
+	fmt.Println(sessionJwt)
+	sessionId := parseJwt(sessionJwt.Token)
+
 	fmt.Println("Getting player details")
-	pd := getPlayerDetails(*conn)
+	pd := getPlayerDetails(sessionId)
 
 	newPlayer := models.Player{
-		Name:       pd.Name,
-		BuyIn:      pd.BuyIn,
-		CurrentBet: pd.CurrBet,
+		Name:    pd.Name,
+		BuyIn:   pd.BuyIn,
+		CurrBet: pd.CurrBet,
 		// NOTE: since Hand is empty when JSON serialised it will be sent a null
 		// so it's handled by the frontend. Maybe change the serialization by
 		// making a custom serializer or instantiating the hand beforehand, pun intended
@@ -74,8 +88,9 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	}
 
 	playerConn := PlayerConn{
-		player: &newPlayer,
-		Conn:   *conn,
+		sessionId: sessionId,
+		player:    &newPlayer,
+		Conn:      *conn,
 	}
 
 	server.connQueue = append(server.connQueue, playerConn)

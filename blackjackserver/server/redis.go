@@ -4,7 +4,6 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 
 	"github.com/go-redis/redis"
@@ -27,34 +26,16 @@ func loadPublicKey() *rsa.PublicKey {
 var PUBLIC_KEY *rsa.PublicKey = loadPublicKey()
 
 var REDIS_HOST string = getEnv("REDIS_HOST", "localhost")
-var REDIS_PORT string = getEnv("REDIS_PORT", "6379") // This about making int
+var REDIS_PORT string = getEnv("REDIS_PORT", "6379")
+
+type Token struct {
+	Token string
+}
 
 type PlayerDetails struct {
 	Name    string
 	BuyIn   int
 	CurrBet int
-}
-
-func fetchPlayerDetails(token string) PlayerDetails {
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", REDIS_HOST, REDIS_PORT),
-		Password: "",
-		DB:       0,
-	})
-
-	val, err := client.Get(token).Result()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("got from redis %s\n", val)
-
-	var pd PlayerDetails
-	err = json.Unmarshal([]byte(val), &pd)
-	if err != nil {
-		fmt.Println("failed to unmarshal")
-	}
-
-	return pd
 }
 
 func parseJwt(tokenString string) string {
@@ -81,22 +62,48 @@ func parseJwt(tokenString string) string {
 	}
 }
 
-func getPlayerDetails(conn net.Conn) PlayerDetails {
-	type Token struct {
-		Token string
-	}
-	var token Token
+func getPlayerDetails(sessionId string) PlayerDetails {
+	// TODO: reuse an existing redis client connection
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", REDIS_HOST, REDIS_PORT),
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
 
-	// Ask client for token
-	msg := ReadData(conn)
-	fmt.Printf("Received %s", msg)
-	err := json.Unmarshal([]byte(msg), &token)
+	val, err := client.Get(sessionId).Result()
 	if err != nil {
-		fmt.Println("Failed to unmarshal")
-		// TODO: handle failure
+		fmt.Println(err)
+	}
+	fmt.Printf("got from redis %s\n", val)
+
+	var pd PlayerDetails
+	err = json.Unmarshal([]byte(val), &pd)
+	if err != nil {
+		fmt.Println("failed to unmarshal")
 	}
 
-	fmt.Println(token)
-	redisToken := parseJwt(token.Token)
-	return fetchPlayerDetails(redisToken)
+	return pd
+}
+
+func setPlayerDetails(sessionId string, pd PlayerDetails) {
+	fmt.Printf("Setting player details for session: %s\n", sessionId)
+	// TODO: reuse an existing redis client connection
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", REDIS_HOST, REDIS_PORT),
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+
+	pdJson, err := json.Marshal(pd)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = client.Set(sessionId, pdJson, 0).Err()
+	if err != nil {
+		fmt.Println(err)
+	}
 }

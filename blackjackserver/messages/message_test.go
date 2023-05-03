@@ -37,6 +37,12 @@ func TestMessage(t *testing.T) {
 		assertStringEqual(t, message, expected)
 	})
 
+	t.Run("test leave message", func(t *testing.T) {
+		message := leave()
+		expected := `{"type":"PlayerAction","message":"Leave"}`
+		assertStringEqual(t, message, expected)
+	})
+
 	t.Run("test bust message", func(t *testing.T) {
 		message := bust()
 		expected := `{"type":"HandState","message":"Bust"}`

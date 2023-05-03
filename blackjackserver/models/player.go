@@ -9,20 +9,20 @@ type winOrLose interface {
 }
 
 type Player struct {
-	Name       string
-	BuyIn      int
-	Hand       Hand
-	CurrentBet int
-	IsDealer   bool `json:"-"`
-	Active     bool `json:"-"`
+	Name     string
+	BuyIn    int
+	CurrBet  int
+	Hand     Hand
+	IsDealer bool `json:"-"`
+	Active   bool `json:"-"`
 }
 
 func (player *Player) Win() {
-	player.BuyIn += player.CurrentBet
+	player.BuyIn += player.CurrBet
 }
 
 func (player *Player) Lose() {
-	player.BuyIn -= player.CurrentBet
+	player.BuyIn -= player.CurrBet
 }
 
 func (player *Player) Blackjack() {

@@ -13,5 +13,8 @@ stop:
 db:
 	docker exec -it database psql -U postgres
 
+redis:
+	docker exec -it redis redis-cli
+
 build:
 	docker-compose build

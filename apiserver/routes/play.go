@@ -104,6 +104,7 @@ func storeSession(token string, playerSessionInformation PlayerSessionInformatio
 	json, err := json.Marshal(playerSessionInformation)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	err = client.Set(token, json, 0).Err()

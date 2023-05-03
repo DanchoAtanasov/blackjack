@@ -31,6 +31,10 @@ func hit() string {
 	return makeActionMessage("Hit")
 }
 
+func leave() string {
+	return makeActionMessage("Leave")
+}
+
 func makeHandStateMessage(state string) string {
 	return makeJsonMessage("HandState", state)
 }
@@ -117,6 +121,7 @@ var (
 	OVER_MSG                   string          = gameOver()        // {"type":"Game","message":"Over"}
 	HIT_MSG                    string          = hit()             // {"type":"PlayerAction","message":"Hit"}
 	STAND_MSG                  string          = stand()           // {"type":"PlayerAction","message":"Stand"}
+	LEAVE_MSG                  string          = leave()           // {"type":"PlayerAction","message":"Leave"}
 	BUST_MSG                   string          = bust()            // {"type":"HandState","message":"Bust"}
 	BLACKJACK_MSG              string          = blackjack()       // {"type":"HandState","message":"Blackjack"}
 	LIST_PLAYERS_MSG           listPlayersFunc = listPlayers       // {"type":"ListPlayers","message":"[]"}

@@ -6,21 +6,21 @@ func TestPlayer(t *testing.T) {
 	testWinOrLose := func(t testing.TB, startingBuyIn, bet int, isWin bool, isBlackjack bool) {
 		t.Helper()
 		player := Player{
-			Name:       "Test Player",
-			BuyIn:      startingBuyIn,
-			CurrentBet: 1,
+			Name:    "Test Player",
+			BuyIn:   startingBuyIn,
+			CurrBet: 1,
 		}
 		var expected int
 
 		if isBlackjack {
 			player.Blackjack()
-			expected = startingBuyIn + 2*player.CurrentBet
+			expected = startingBuyIn + 2*player.CurrBet
 		} else if isWin {
 			player.Win()
-			expected = startingBuyIn + player.CurrentBet
+			expected = startingBuyIn + player.CurrBet
 		} else {
 			player.Lose()
-			expected = startingBuyIn - player.CurrentBet
+			expected = startingBuyIn - player.CurrBet
 		}
 
 		if player.BuyIn != expected {

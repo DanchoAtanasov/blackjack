@@ -14,8 +14,21 @@ import (
 
 // Struct used to couple the player model and the connection to them
 type PlayerConn struct {
-	player *models.Player
-	Conn   net.Conn
+	sessionId string
+	player    *models.Player
+	Conn      net.Conn
+}
+
+func (playerConn PlayerConn) saveDisconnectedPlayerDetails() {
+	player := playerConn.player
+	pd := PlayerDetails{
+		// Don't know why implicit casting doesn't work
+		Name:    player.Name,
+		BuyIn:   player.BuyIn,
+		CurrBet: player.CurrBet,
+	}
+	fmt.Println("Updating player details for disconnected player")
+	setPlayerDetails(playerConn.sessionId, pd)
 }
 
 type Room struct {
@@ -46,6 +59,8 @@ func (room *Room) AddNewPlayerConn(newPlayerConn PlayerConn) {
 }
 
 func (room *Room) RemoveDisconnectedPlayer(position int) {
+	room.playerConns[position].saveDisconnectedPlayerDetails()
+
 	// TODO improve player diconnecting/rotating logic
 	if len(room.playerConns) <= 1 {
 		room.playerConns = room.playerConns[:0]
@@ -94,7 +109,7 @@ func (room *Room) ReadInMessages() {
 
 		if response.Playing {
 			currPlayer.Active = true
-			currPlayer.CurrentBet = response.CurrentBet
+			currPlayer.CurrBet = response.CurrentBet
 		} else {
 			currPlayer.Active = false
 		}

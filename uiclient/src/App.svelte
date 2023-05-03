@@ -47,6 +47,10 @@
   function handleSendStand(event) {
     session.sendStand();
   }
+
+  function handleSendLeave(event) {
+    session.sendLeave();
+  }
 </script>
 
 <main>
@@ -63,7 +67,7 @@
   {:else if $isGameOver}
     <p> Game is over, final buyin: {$playersStore.get($currPlayerName).BuyIn} </p>
   {:else}
-    <GameView on:hit={handleSendHit} on:stand={handleSendStand}></GameView>
+    <GameView on:hit={handleSendHit} on:stand={handleSendStand} on:leave={handleSendLeave}></GameView>
   {/if}
 </main>
 

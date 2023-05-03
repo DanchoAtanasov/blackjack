@@ -7,6 +7,7 @@
 
   import DealerHand from '../lib/DealerHand.svelte';
   import CurrentBet from '../lib/CurrentBet.svelte';
+  import LeaveButton from './LeaveButton.svelte';
 </script>
 
 <h3>Game Table</h3>
@@ -25,3 +26,4 @@
 <HitButton on:hit/>
 <StandButton on:stand/>
 <CurrentBet></CurrentBet>
+<LeaveButton on:leave></LeaveButton>
