@@ -21,7 +21,7 @@ type GameDetails = {
 }
 
 type CookieLoginResponse = {
-  Useid: string,
+  Userid: string,
   Username: string,
 }
 

@@ -58,6 +58,7 @@ func main() {
 	mux.HandleFunc("/cookie", routeHandler.CookieLogin)
 	mux.HandleFunc("/login", routeHandler.Login)
 	mux.HandleFunc("/signup", routeHandler.Signup)
+	mux.HandleFunc("/endsession", routeHandler.EndSession)
 	corsMux := NewCors(mux)
 
 	fmt.Printf("Api server started on port %d\n", env.PORT)

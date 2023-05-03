@@ -187,6 +187,20 @@ func (database *UsersDatabase) AddUser(username string, password string) (models
 	return user, nil
 }
 
+func (database *UsersDatabase) SetUserBuyIn(username string, buyin int) error {
+	stmt, err := database.db.Prepare(`
+		UPDATE users SET buyin = $2 WHERE username = $1;`,
+	)
+	defer stmt.Close()
+
+	_, err = stmt.Exec(username, buyin)
+	if err != nil {
+		return errors.New("Cannot update buyin")
+	}
+
+	return nil
+}
+
 // func main() {
 // 	// var err error
 // 	db, err := NewUsersDatabase()

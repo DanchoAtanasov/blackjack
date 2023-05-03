@@ -13,7 +13,7 @@ var UserTokenNotFound = errors.New("user-token not found")
 var UserTokenCannotBeParsed = errors.New("user-token cannot be parsed")
 
 type CookieLoginResponse struct {
-	Useid    string
+	Userid   string
 	Username string
 }
 
@@ -51,7 +51,7 @@ func (h *RouteHandler) CookieLogin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp := CookieLoginResponse{Useid: userToken.UserId, Username: userToken.Username}
+	resp := CookieLoginResponse{Userid: userToken.UserId, Username: userToken.Username}
 	response, _ := json.Marshal(resp)
 	io.WriteString(w, string(response))
 }

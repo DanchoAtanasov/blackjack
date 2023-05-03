@@ -4,6 +4,7 @@ import (
 	env "apiserver/environment"
 	"apiserver/tokens"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -111,4 +112,45 @@ func storeSession(token string, playerSessionInformation PlayerSessionInformatio
 	if err != nil {
 		fmt.Println(err)
 	}
+}
+
+// Redis functions to be moved to a separate file
+func getSession(token string) PlayerSessionInformation {
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:6379", env.REDIS_HOST),
+		Password: "",
+		DB:       0,
+	})
+
+	val, err := client.Get(token).Result()
+	if err != nil {
+		fmt.Println(err)
+		return PlayerSessionInformation{}
+	}
+	fmt.Printf("got from redis %s\n", val)
+
+	var playerSession PlayerSessionInformation
+	err = json.Unmarshal([]byte(val), &playerSession)
+	if err != nil {
+		fmt.Println("failed to unmarshal")
+		return PlayerSessionInformation{}
+	}
+
+	return playerSession
+}
+
+func deleteSession(token string) error {
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:6379", env.REDIS_HOST),
+		Password: "",
+		DB:       0,
+	})
+
+	err := client.Del(token).Err()
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("Could not delete session")
+	}
+
+	return nil
 }

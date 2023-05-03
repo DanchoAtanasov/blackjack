@@ -60,6 +60,7 @@ func (room *Room) AddNewPlayerConn(newPlayerConn PlayerConn) {
 
 func (room *Room) RemoveDisconnectedPlayer(position int) {
 	room.playerConns[position].saveDisconnectedPlayerDetails()
+	SendEndSession(room.playerConns[position].sessionId)
 
 	// TODO improve player diconnecting/rotating logic
 	if len(room.playerConns) <= 1 {
