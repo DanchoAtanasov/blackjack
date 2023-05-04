@@ -21,12 +21,12 @@ func (h *RouteHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	var endSessionRequest EndSessionRequest
 	err = json.Unmarshal([]byte(body), &endSessionRequest)
 	if err != nil {
-		fmt.Printf("could not parse singup request")
+		fmt.Printf("could not parse end session request")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println(endSessionRequest)
-	playerSession := getSession(endSessionRequest.SessionId)
+
+	playerSession := h.sc.GetSession(endSessionRequest.SessionId)
 
 	err = h.db.SetUserBuyIn(playerSession.Name, playerSession.BuyIn)
 	if err != nil {
@@ -36,5 +36,5 @@ func (h *RouteHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Buyin set")
 
 	fmt.Println("Deleting session")
-	go deleteSession(endSessionRequest.SessionId)
+	go h.sc.DeleteSession(endSessionRequest.SessionId)
 }

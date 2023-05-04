@@ -4,6 +4,7 @@ import (
 	"apiserver/database"
 	env "apiserver/environment"
 	"apiserver/routes"
+	sessioncache "apiserver/session_cache"
 	"errors"
 	"fmt"
 	"io"
@@ -50,7 +51,9 @@ func main() {
 	}
 	defer db.Close()
 
-	routeHandler := routes.NewRouteHandler(db)
+	sc := sessioncache.NewSessionCache()
+
+	routeHandler := routes.NewRouteHandler(db, sc)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getRoot)

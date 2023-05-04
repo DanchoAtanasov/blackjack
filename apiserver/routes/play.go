@@ -2,16 +2,15 @@ package routes
 
 import (
 	env "apiserver/environment"
+	"apiserver/session_cache"
 	"apiserver/tokens"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 )
 
@@ -22,12 +21,6 @@ type PlayerRequest struct {
 type BlackjackServerDetails struct {
 	GameServer string
 	Token      string
-}
-
-type PlayerSessionInformation struct {
-	Name    string
-	BuyIn   int
-	CurrBet int
 }
 
 func (h *RouteHandler) Play(w http.ResponseWriter, r *http.Request) {
@@ -85,72 +78,12 @@ func (h *RouteHandler) Play(w http.ResponseWriter, r *http.Request) {
 	response := BlackjackServerDetails{GameServer: env.BLACKJACK_SERVER_PATH, Token: sessionToken}
 	responseString, _ := json.Marshal(response)
 	io.WriteString(w, string(responseString))
-	playerSessionInformation := PlayerSessionInformation{
+	playerSessionInformation := sessioncache.PlayerSessionInformation{
 		Name:    userToken.Username,
 		BuyIn:   user.BuyIn,
 		CurrBet: playerRequest.CurrBet,
 	}
 
-	go storeSession(redisToken, playerSessionInformation)
+	go h.sc.StoreSession(redisToken, playerSessionInformation)
 
-}
-
-func storeSession(token string, playerSessionInformation PlayerSessionInformation) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:6379", env.REDIS_HOST),
-		Password: "",
-		DB:       0,
-	})
-
-	json, err := json.Marshal(playerSessionInformation)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	err = client.Set(token, json, 0).Err()
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-
-// Redis functions to be moved to a separate file
-func getSession(token string) PlayerSessionInformation {
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:6379", env.REDIS_HOST),
-		Password: "",
-		DB:       0,
-	})
-
-	val, err := client.Get(token).Result()
-	if err != nil {
-		fmt.Println(err)
-		return PlayerSessionInformation{}
-	}
-	fmt.Printf("got from redis %s\n", val)
-
-	var playerSession PlayerSessionInformation
-	err = json.Unmarshal([]byte(val), &playerSession)
-	if err != nil {
-		fmt.Println("failed to unmarshal")
-		return PlayerSessionInformation{}
-	}
-
-	return playerSession
-}
-
-func deleteSession(token string) error {
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:6379", env.REDIS_HOST),
-		Password: "",
-		DB:       0,
-	})
-
-	err := client.Del(token).Err()
-	if err != nil {
-		fmt.Println(err)
-		return errors.New("Could not delete session")
-	}
-
-	return nil
 }
