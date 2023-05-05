@@ -8,7 +8,7 @@
   import DealerHand from '../lib/DealerHand.svelte';
   import CurrentBet from '../lib/CurrentBet.svelte';
   import LeaveButton from './LeaveButton.svelte';
-    import SplitButton from './SplitButton.svelte';
+  import SplitButton from './SplitButton.svelte';
 </script>
 
 <h3>Game Table</h3>
@@ -21,11 +21,15 @@
     {/if}
 </p>
 <DealerHand></DealerHand>
-<PlayerHand></PlayerHand>
+
+{#each $playersStore.values as player}
+  <p>{player.Name}'s hands:</p>
+  <PlayerHand player={player} on:split></PlayerHand>
+  <br/>
+{/each}
 
 
 <HitButton on:hit/>
 <StandButton on:stand/>
-<SplitButton on:split/>
 <CurrentBet/>
 <LeaveButton on:leave/>

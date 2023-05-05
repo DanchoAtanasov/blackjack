@@ -109,7 +109,10 @@ func playTurn(
 			} else if input == messages.HIT_MSG {
 				currHand.AddCard(deck.DealCard())
 			} else if input == messages.SPLIT_MSG {
-
+				if !currHand.CanSplit() {
+					fmt.Println("Cannot split not pairs")
+					continue
+				}
 				removedCard := currHand.RemoveCard()
 				newHand := models.Hand{}
 				newHand.AddCard(removedCard)

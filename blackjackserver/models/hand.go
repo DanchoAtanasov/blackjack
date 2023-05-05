@@ -65,6 +65,13 @@ func (hand Hand) IsBust() bool {
 	return hand.Sum > 21
 }
 
+func (hand Hand) CanSplit() bool {
+	if len(hand.Cards) != 2 {
+		return false
+	}
+	return hand.Cards[0].ValueStr == hand.Cards[1].ValueStr
+}
+
 func (hand *Hand) ToJson() string {
 	result, _ := json.Marshal(*hand)
 	return string(result)

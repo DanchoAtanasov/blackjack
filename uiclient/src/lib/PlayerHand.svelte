@@ -1,6 +1,9 @@
 
 <script>
-  import { playersStore } from '../stores'
+  import SplitButton from "./SplitButton.svelte";
+
+
+  export let player;
 
   function getCardAsset(value, suit) {
     // TODO fix asset name mismatch
@@ -26,22 +29,27 @@
   }
 </script>
 
-{#each $playersStore.values as player}
-  <p>{player.Name}'s hands:</p>
-  <div>
-    {#each player.Hands as playerHand}
+<div>
+  {#each player.Hands as playerHand}
+    <div class="zdravko">
       {#each playerHand.cards as playerCard}
         <img alt="card" class="playing-card" src={getCardAsset(playerCard.ValueStr, playerCard.Suit)} />
       {/each}
       <p>Sum: {playerHand.sum}</p>
-    {/each}
-  </div>
-{/each}
+      {#if playerHand.cards[1] !== undefined && playerHand.cards[0].ValueStr === playerHand.cards[1].ValueStr}
+        <SplitButton on:split/>
+      {/if}
+    </div>
+  {/each}
+</div>
 
 <style>
   .playing-card {
     width: 75px;
     height: 150px;
+  }
+  .zdravko {
+    position: relative;
   }
 </style>
   

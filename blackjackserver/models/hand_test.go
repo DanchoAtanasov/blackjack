@@ -233,4 +233,44 @@ func TestHand(t *testing.T) {
 		hand := Hand{}
 		hand.RemoveCard()
 	})
+
+	t.Run("test CanSplit", func(t *testing.T) {
+		hand := Hand{}
+		kingCard := Card{
+			ValueStr: "K",
+			Suit:     "Spades",
+			value:    10,
+		}
+		hand.AddCard(kingCard)
+		hand.AddCard(kingCard)
+		if !hand.CanSplit() {
+			t.Error("CanSplit should be true")
+		}
+
+		hand = Hand{}
+		queenCard := Card{
+			ValueStr: "Q",
+			Suit:     "Spades",
+			value:    10,
+		}
+		hand.AddCard(kingCard)
+		hand.AddCard(queenCard)
+		if hand.CanSplit() {
+			t.Error("CanSplit should be false")
+		}
+		hand = Hand{}
+		aceCard := Card{
+			ValueStr: "A",
+			Suit:     "Spades",
+			value:    11,
+		}
+		hand.AddCard(aceCard)
+		if hand.CanSplit() {
+			t.Error("CanSplit should be false")
+		}
+		hand.AddCard(aceCard)
+		if !hand.CanSplit() {
+			t.Error("CanSplit should be true")
+		}
+	})
 }
