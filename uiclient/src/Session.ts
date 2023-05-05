@@ -83,6 +83,12 @@ export default class Session {
     this.socket.send(JSON.stringify(standMessage));
   }
 
+  sendSplit() {
+    console.log("Sending split");
+    var splitMessage = {"type": "PlayerAction", "message": "Split"}
+    this.socket.send(JSON.stringify(splitMessage));
+  }
+
   sendLeave() {
     console.log("Sending leave");
     var leaveMessage = {"type": "PlayerAction", "message": "Leave"}
@@ -141,8 +147,8 @@ export default class Session {
     // Remove disconnected players
     playersStore.clear();
     players.forEach(player => {
-      if (player.Hand.cards === null) {
-        player.Hand.cards = []; 
+      if (player.Hands[0].cards === null) {
+        player.Hands[0].cards = []; 
       }
       playersStore.set(player.Name, player);
     });
@@ -233,6 +239,7 @@ export default class Session {
     }).then(resp => resp.json()).then(respJson => {
       console.log(respJson);
       currPlayerName.set(respJson.Username);
+      return respJson
     }).catch(err => console.log(`Error getting details ${err}`)
     );
     return

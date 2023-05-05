@@ -27,12 +27,14 @@
 </script>
 
 {#each $playersStore.values as player}
-  <p>{player.Name}'s hand:</p>
+  <p>{player.Name}'s hands:</p>
   <div>
-    {#each player.Hand.cards as playerCard}
-      <img alt="card" class="playing-card" src={getCardAsset(playerCard.ValueStr, playerCard.Suit)} />
+    {#each player.Hands as playerHand}
+      {#each playerHand.cards as playerCard}
+        <img alt="card" class="playing-card" src={getCardAsset(playerCard.ValueStr, playerCard.Suit)} />
+      {/each}
+      <p>Sum: {playerHand.sum}</p>
     {/each}
-    <p>Sum: {player.Hand.sum}</p>
   </div>
 {/each}
 

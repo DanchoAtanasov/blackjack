@@ -51,6 +51,10 @@
   function handleSendLeave(event) {
     session.sendLeave();
   }
+
+  function handleSendSplit(event) {
+    session.sendSplit();
+  }
 </script>
 
 <main>
@@ -67,7 +71,7 @@
   {:else if $isGameOver}
     <p> Game is over, final buyin: {$playersStore.get($currPlayerName).BuyIn} </p>
   {:else}
-    <GameView on:hit={handleSendHit} on:stand={handleSendStand} on:leave={handleSendLeave}></GameView>
+    <GameView on:hit={handleSendHit} on:stand={handleSendStand} on:leave={handleSendLeave} on:split={handleSendSplit}></GameView>
   {/if}
 </main>
 

@@ -37,6 +37,12 @@ func TestMessage(t *testing.T) {
 		assertStringEqual(t, message, expected)
 	})
 
+	t.Run("test split message", func(t *testing.T) {
+		message := split()
+		expected := `{"type":"PlayerAction","message":"Split"}`
+		assertStringEqual(t, message, expected)
+	})
+
 	t.Run("test leave message", func(t *testing.T) {
 		message := leave()
 		expected := `{"type":"PlayerAction","message":"Leave"}`
@@ -56,23 +62,24 @@ func TestMessage(t *testing.T) {
 	})
 
 	t.Run("test player hand message", func(t *testing.T) {
-		player := models.Player{}
-		player.Hand.AddCard(models.Card{
+		player := models.Player{Hands: []*models.Hand{{}}}
+		player.Hands[0].AddCard(models.Card{
 			ValueStr: "2",
 			Suit:     "Spades",
 		})
-		player.Hand.AddCard(models.Card{
+		player.Hands[0].AddCard(models.Card{
 			ValueStr: "3",
 			Suit:     "Clubs",
 		})
 		message := playerHandMessage(player)
-		expected := `{"type":"PlayerHand","message":"{\"Name\":\"\",\"BuyIn\":0,\"Hand\":{\"cards\":[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"},{\"ValueStr\":\"3\",\"Suit\":\"Clubs\"}],\"sum\":0},\"CurrentBet\":0}"}`
+		expected := `{"type":"PlayerHand","message":"{\"Name\":\"\",\"BuyIn\":0,\"CurrBet\":0,\"Hands\":[{\"cards\":[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"},{\"ValueStr\":\"3\",\"Suit\":\"Clubs\"}],\"sum\":0}]}"}`
+		// expected := `{"type":"PlayerHand","message":"{\"Name\":\"\",\"BuyIn\":0,\"Hand\":{\"cards\":[{\"ValueStr\":\"2\",\"Suit\":\"Spades\"},{\"ValueStr\":\"3\",\"Suit\":\"Clubs\"}],\"sum\":0},\"CurrentBet\":0}"}`
 		assertStringEqual(t, message, expected)
 	})
 
 	t.Run("test dealer hand message", func(t *testing.T) {
-		player := models.Player{}
-		player.Hand.AddCard(models.Card{
+		player := models.Player{Hands: []*models.Hand{{}}}
+		player.Hands[0].AddCard(models.Card{
 			ValueStr: "2",
 			Suit:     "Spades",
 		})

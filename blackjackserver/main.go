@@ -18,7 +18,7 @@ func readPlayerAction(room *server.Room) string {
 	retries := 5
 	for {
 		input = room.ReadCurrPlayer()
-		if input == messages.HIT_MSG || input == messages.STAND_MSG {
+		if input == messages.HIT_MSG || input == messages.STAND_MSG || input == messages.SPLIT_MSG {
 			break
 		}
 		if input == messages.LEAVE_MSG {
@@ -68,71 +68,89 @@ func playTurn(
 	deck *models.Deck,
 	room *server.Room,
 ) {
-	for {
-		room.Log.Printf("%s's hand is %v", player.Name, player.Hand.Cards)
-		room.Log.Printf("Current count: %d", player.Hand.Sum)
+	// Loops over a players hands
+	// Used for splitting pairs or playing multiple hands at once
+	for i := 0; i < len(player.Hands); i++ {
+		currHand := player.Hands[i]
+		fmt.Println("In outer loop")
+		for { // Loops until player busts or stands
+			room.Log.Printf("%s's hand is %v", player.Name, currHand)
+			room.Log.Printf("Current count: %d", currHand.Sum)
 
-		// Send current hand
-		room.SendAll(messages.HAND_MSG(*player))
+			// Send current hand
+			room.SendAll(messages.HAND_MSG(*player))
 
-		if player.Hand.IsBlackjack {
-			if !player.IsDealer {
-				room.Log.Info("Blackjack!")
-				room.SendCurrPlayer(messages.BLACKJACK_MSG)
-				// Maybe send all that it's a blackjack
-				// room.SendAll(messages.BLACKJACK_MSG)
+			if currHand.IsBlackjack {
+				if !player.IsDealer {
+					room.Log.Info("Blackjack!")
+					room.SendCurrPlayer(messages.BLACKJACK_MSG)
+					// Maybe send all that it's a blackjack
+					// room.SendAll(messages.BLACKJACK_MSG)
+				}
+				break
 			}
-			break
-		}
 
-		if player.Hand.IsBust() {
-			room.Log.Info("Over 21, bust")
-			room.SendAll(messages.BUST_MSG)
-			break
-		}
+			if currHand.IsBust() {
+				room.Log.Info("Over 21, bust")
+				room.SendAll(messages.BUST_MSG)
+				break
+			}
 
-		// Read action
-		var input string
-		if player.IsDealer {
-			input = readDealerAction(player.Hand)
-		} else {
-			input = readPlayerAction(room)
-		}
+			// Read action
+			var input string
+			if player.IsDealer {
+				input = readDealerAction(*currHand)
+			} else {
+				input = readPlayerAction(room)
+			}
 
-		if input == messages.STAND_MSG {
-			break
-		} else if input == "Out" {
-			fmt.Println("Removing disconnected player")
-			room.RemoveDisconnectedPlayer(0)
-			player.Active = false
-			break
+			if input == messages.STAND_MSG {
+				break
+			} else if input == messages.HIT_MSG {
+				currHand.AddCard(deck.DealCard())
+			} else if input == messages.SPLIT_MSG {
+				fmt.Println("Split received")
+				removedCard := currHand.RemoveCard()
+				newHand := models.Hand{}
+				newHand.AddCard(removedCard)
+				player.Hands = append(player.Hands, &newHand)
+			} else if input == "Out" {
+				fmt.Println("Removing disconnected player")
+				room.RemoveDisconnectedPlayer(0)
+				player.Active = false
+				break
+			} else {
+				fmt.Printf("Message: %s not recognized /n", input)
+				fmt.Println(messages.SPLIT_MSG)
+				currHand.AddCard(deck.DealCard())
+			}
 		}
-
-		player.Hand.AddCard(deck.DealCard())
 	}
 }
 
 func clearHands(players []*models.Player) {
 	for i := range players {
-		models.ClearHand(&players[i].Hand)
+		players[i].Hands = []*models.Hand{{}}
 	}
 }
 
 func calculateWinners(players []*models.Player, dealer models.Player, room server.Room) {
 	for i := range players {
 		currPlayer := players[i]
-		switch models.GetWinner(currPlayer.Hand, dealer.Hand) {
-		case 2:
-			room.Log.Printf("%s had Blackjack, gets 3x bet", currPlayer.Name)
-			currPlayer.Blackjack()
-		case 1:
-			room.Log.Printf("%s wins!", currPlayer.Name)
-			currPlayer.Win()
-		case -1:
-			room.Log.Info("Dealer wins. :(")
-			currPlayer.Lose()
-		case 0:
-			room.Log.Info("Draw")
+		for _, playerHand := range currPlayer.Hands {
+			switch models.GetWinner(*playerHand, *dealer.Hands[0]) {
+			case 2:
+				room.Log.Printf("%s had Blackjack, gets 3x bet", currPlayer.Name)
+				currPlayer.Blackjack()
+			case 1:
+				room.Log.Printf("%s wins!", currPlayer.Name)
+				currPlayer.Win()
+			case -1:
+				room.Log.Info("Dealer wins. :(")
+				currPlayer.Lose()
+			case 0:
+				room.Log.Info("Draw")
+			}
 		}
 	}
 }
@@ -149,17 +167,17 @@ func playRound(deck *models.Deck, room *server.Room) {
 	// Note: players is a slice of pointers as they're created in register and this way they can
 	// be updated from the game logic code
 	players := room.GetPlayers()
-	dealer := &models.Player{Name: "Dealer", IsDealer: true}
+	dealer := &models.Player{Name: "Dealer", IsDealer: true, Hands: []*models.Hand{{}}}
 
 	for i := range players {
-		players[i].Hand.AddCard(deck.DealCard())
+		players[i].Hands[0].AddCard(deck.DealCard())
 	}
-	dealer.Hand.AddCard(deck.DealCard())
+	dealer.Hands[0].AddCard(deck.DealCard())
 	for i := range players {
-		players[i].Hand.AddCard(deck.DealCard())
+		players[i].Hands[0].AddCard(deck.DealCard())
 	}
 
-	room.Log.Printf("Dealer's hand: %v", dealer.Hand.Cards)
+	room.Log.Printf("Dealer's hand: %v", dealer.Hands[0].Cards)
 	room.SendAll(messages.LIST_PLAYERS_MSG(players))
 	room.SendAll(messages.DEALER_HAND_MSG(*dealer))
 

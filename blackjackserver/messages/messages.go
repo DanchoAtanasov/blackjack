@@ -31,6 +31,10 @@ func hit() string {
 	return makeActionMessage("Hit")
 }
 
+func split() string {
+	return makeActionMessage("Split")
+}
+
 func leave() string {
 	return makeActionMessage("Leave")
 }
@@ -97,7 +101,7 @@ func DecodePlayerInMessage(msg string) (PlayerInResponse, error) {
 }
 
 func dealerHandMessage(player models.Player) string {
-	return makeJsonMessage("DealerHand", player.Hand.ToJson())
+	return makeJsonMessage("DealerHand", player.Hands[0].ToJson())
 }
 
 func handMessage(player models.Player) string {
@@ -121,6 +125,7 @@ var (
 	OVER_MSG                   string          = gameOver()        // {"type":"Game","message":"Over"}
 	HIT_MSG                    string          = hit()             // {"type":"PlayerAction","message":"Hit"}
 	STAND_MSG                  string          = stand()           // {"type":"PlayerAction","message":"Stand"}
+	SPLIT_MSG                  string          = split()           // {"type":"PlayerAction","message":"Split"}
 	LEAVE_MSG                  string          = leave()           // {"type":"PlayerAction","message":"Leave"}
 	BUST_MSG                   string          = bust()            // {"type":"HandState","message":"Bust"}
 	BLACKJACK_MSG              string          = blackjack()       // {"type":"HandState","message":"Blackjack"}

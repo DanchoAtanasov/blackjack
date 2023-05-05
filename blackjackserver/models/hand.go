@@ -28,6 +28,23 @@ func (hand *Hand) AddCard(card Card) {
 	}
 }
 
+func (hand *Hand) RemoveCard() Card {
+	if len(hand.Cards) <= 0 {
+		panic("Can't remove from empty hand")
+	}
+
+	var card Card
+	hand.Cards, card = hand.Cards[:len(hand.Cards)-1], hand.Cards[len(hand.Cards)-1]
+	if card.ValueStr == "A" {
+		hand.NumAces -= 1
+	}
+	hand.increaseSum(-card.value)
+	if hand.Sum == 21 && len(hand.Cards) == 2 {
+		hand.IsBlackjack = true
+	}
+	return card
+}
+
 func (hand *Hand) increaseSum(value int) {
 	hand.Sum += value
 	// convert soft count to hard count

@@ -12,7 +12,7 @@ type Player struct {
 	Name     string
 	BuyIn    int
 	CurrBet  int
-	Hand     Hand
+	Hands    []*Hand
 	IsDealer bool `json:"-"`
 	Active   bool `json:"-"`
 }

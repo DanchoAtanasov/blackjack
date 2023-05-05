@@ -13,7 +13,7 @@ export type Hand = {
 export type Player = {
   Name: string,
 	BuyIn: number,
-  Hand: Hand,
+  Hands: Hand[],
 	CurrentBet: number,
 }
 
