@@ -22,22 +22,29 @@ func (hand *Hand) AddCard(card Card) {
 		hand.NumAces += 1
 	}
 	hand.Cards = append(hand.Cards, card)
-	hand.increaseSum(card.value)
+	hand.increaseSum(card.value) // would remove from NumAces if it's about to bust
 	if hand.Sum == 21 && len(hand.Cards) == 2 {
 		hand.IsBlackjack = true
 	}
 }
 
 func (hand *Hand) RemoveCard() Card {
+	// Think about improving this
 	if len(hand.Cards) <= 0 {
 		panic("Can't remove from empty hand")
 	}
 
 	var card Card
 	hand.Cards, card = hand.Cards[:len(hand.Cards)-1], hand.Cards[len(hand.Cards)-1]
-	if card.ValueStr == "A" {
-		hand.NumAces -= 1
+	// If there is an ace in the cards, set NumAces to 1, otherwise the NumAces count is wrong
+	// when you split aces
+	for i := 0; i < len(hand.Cards); i++ {
+		if hand.Cards[i].ValueStr == "A" {
+			hand.NumAces = 1
+			break
+		}
 	}
+
 	hand.increaseSum(-card.value)
 	if hand.Sum == 21 && len(hand.Cards) == 2 {
 		hand.IsBlackjack = true

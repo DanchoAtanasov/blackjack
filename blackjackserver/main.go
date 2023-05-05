@@ -68,11 +68,11 @@ func playTurn(
 	deck *models.Deck,
 	room *server.Room,
 ) {
+	// TODO: refactor as it's getting a bit long
 	// Loops over a players hands
 	// Used for splitting pairs or playing multiple hands at once
 	for i := 0; i < len(player.Hands); i++ {
 		currHand := player.Hands[i]
-		fmt.Println("In outer loop")
 		for { // Loops until player busts or stands
 			room.Log.Printf("%s's hand is %v", player.Name, currHand)
 			room.Log.Printf("Current count: %d", currHand.Sum)
@@ -109,7 +109,7 @@ func playTurn(
 			} else if input == messages.HIT_MSG {
 				currHand.AddCard(deck.DealCard())
 			} else if input == messages.SPLIT_MSG {
-				fmt.Println("Split received")
+
 				removedCard := currHand.RemoveCard()
 				newHand := models.Hand{}
 				newHand.AddCard(removedCard)

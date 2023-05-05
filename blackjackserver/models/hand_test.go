@@ -1,6 +1,8 @@
 package models
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestHand(t *testing.T) {
 	t.Run("test add card", func(t *testing.T) {
@@ -167,6 +169,68 @@ func TestHand(t *testing.T) {
 		if result != expected {
 			t.Errorf("GetWinner is %d but should be %d\n", result, expected)
 		}
+	})
 
+	t.Run("test remove card", func(t *testing.T) {
+		hand := Hand{}
+		hand.AddCard(Card{
+			ValueStr: "2",
+			Suit:     "Spades",
+			value:    2,
+		})
+		secondCard := Card{
+			ValueStr: "3",
+			Suit:     "Spades",
+			value:    3,
+		}
+		hand.AddCard(secondCard)
+
+		removedCard := hand.RemoveCard()
+
+		if len(hand.Cards) != 1 {
+			t.Errorf("cards in hand is %d should be %d\n", len(hand.Cards), 1)
+		}
+		if removedCard != secondCard {
+			t.Error("Removed card isn't the last added one.")
+		}
+	})
+
+	t.Run("test remove card check ace count", func(t *testing.T) {
+		hand := Hand{}
+		aceCard := Card{
+			ValueStr: "A",
+			Suit:     "Spades",
+			value:    11,
+		}
+		hand.AddCard(aceCard)
+		hand.AddCard(aceCard)
+
+		if hand.NumAces != 1 {
+			// Should be 1 even though we add 2 aces as 11 + 11 = 22 which is bust
+			// so we do 22 - 10 = 12 sum and 1 NumAces
+			t.Errorf("Num aces is %d should be %d\n", hand.NumAces, 1)
+		}
+
+		removedCard := hand.RemoveCard()
+
+		if len(hand.Cards) != 1 {
+			t.Errorf("cards in hand is %d should be %d\n", len(hand.Cards), 1)
+		}
+		if removedCard != aceCard {
+			t.Error("Removed card isn't the last added one.")
+		}
+		if hand.NumAces != 1 {
+			t.Errorf("Num aces is %d should be %d\n", hand.NumAces, 1)
+		}
+	})
+
+	t.Run("test remove card from empty hand", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("Expected RemoveCard to panic, but it didn't")
+			}
+		}()
+		hand := Hand{}
+		hand.RemoveCard()
 	})
 }
