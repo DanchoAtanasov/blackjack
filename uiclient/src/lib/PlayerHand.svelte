@@ -31,7 +31,7 @@
 
 <div>
   {#each player.Hands as playerHand}
-    <div class="zdravko">
+    <div class="outer">
       {#each playerHand.cards as playerCard}
         <img alt="card" class="playing-card" src={getCardAsset(playerCard.ValueStr, playerCard.Suit)} />
       {/each}
@@ -48,7 +48,7 @@
     width: 75px;
     height: 150px;
   }
-  .zdravko {
+  .outer {
     position: relative;
   }
 </style>
