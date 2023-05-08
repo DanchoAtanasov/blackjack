@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+const seed int64 = int64(1683546845923823596)
+
 func TestDeck(t *testing.T) {
 	assertIntEqual := func(t testing.TB, got, want int) {
 		t.Helper()
@@ -21,7 +23,7 @@ func TestDeck(t *testing.T) {
 
 	t.Run("check new deck size", func(t *testing.T) {
 		numDecksInShoe := 6
-		deck := GetNewDeck(numDecksInShoe)
+		deck := GetNewDeck(numDecksInShoe, seed)
 		numCards := len(deck.cards)
 		expected := numDecksInShoe * 52
 
@@ -30,8 +32,10 @@ func TestDeck(t *testing.T) {
 
 	t.Run("check two shuffled decks are different", func(t *testing.T) {
 		numDecksInShoe := 6
-		firstDeck := GetNewShuffledDeck(numDecksInShoe)
-		secondDeck := GetNewShuffledDeck(numDecksInShoe)
+		seed1 := int64(1683546845923823596)
+		firstDeck := GetNewShuffledDeck(numDecksInShoe, seed1)
+		seed2 := int64(1683546845923823123)
+		secondDeck := GetNewShuffledDeck(numDecksInShoe, seed2)
 
 		for i := 0; i < numDecksInShoe*52; i++ {
 			if firstDeck.cards[i] != secondDeck.cards[i] {
@@ -43,7 +47,7 @@ func TestDeck(t *testing.T) {
 
 	t.Run("test deal a card", func(t *testing.T) {
 		numDecksInShoe := 6
-		deck := GetNewDeck(numDecksInShoe)
+		deck := GetNewDeck(numDecksInShoe, seed)
 
 		dealtCard := deck.DealCard()
 		expectedCard := Card{
@@ -68,18 +72,21 @@ func TestDeck(t *testing.T) {
 
 	t.Run("test shuffle deck if low", func(t *testing.T) {
 		numDecksInShoe := 6
-		deck := GetNewDeck(numDecksInShoe)
+		deck := GetNewDeck(numDecksInShoe, seed)
 		threshold := 200
 
+		// Reduce deck to under threshold
 		deck.cards = deck.cards[:threshold-1]
-		newDeck := ShuffleDeckIfLow(&deck, threshold)
 
-		if newDeck == &deck {
-			t.Error("deck pointer is the same but should be different")
-		}
+		// Copy contents of the deck to compare after shuffling
+		deckCopy := deck
+		deckCopy.cards = make([]Card, len(deck.cards))
+		copy(deckCopy.cards, deck.cards)
+
+		ShuffleDeckIfLow(&deck, threshold)
 
 		for i := 0; i < threshold-1; i++ {
-			if deck.cards[i] != newDeck.cards[i] {
+			if deck.cards[i] != deckCopy.cards[i] {
 				return
 			}
 		}
@@ -88,19 +95,21 @@ func TestDeck(t *testing.T) {
 
 	t.Run("test don't shuffle deck if not low", func(t *testing.T) {
 		numDecksInShoe := 6
-		deck := GetNewDeck(numDecksInShoe)
+		deck := GetNewDeck(numDecksInShoe, seed)
 		threshold := 200
 
+		// Reduce deck to just over the threshold so it shouldn't shuffle
 		deck.cards = deck.cards[:threshold+1]
-		newDeck := ShuffleDeckIfLow(&deck, threshold)
 
-		if newDeck != &deck {
-			t.Error("deck pointer is different but should be the same")
-		}
+		// Copy contents of the deck to compare after shuffling
+		deckCopy := deck
+		deckCopy.cards = make([]Card, len(deck.cards))
+		copy(deckCopy.cards, deck.cards)
+		ShuffleDeckIfLow(&deck, threshold)
 
 		for i := 0; i < threshold+1; i++ {
-			if deck.cards[i] != newDeck.cards[i] {
-				t.Error("deck is different after shuffling")
+			if deck.cards[i] != deckCopy.cards[i] {
+				t.Error("deck is different after shuffling but should be the same")
 			}
 		}
 	})

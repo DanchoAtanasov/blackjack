@@ -74,7 +74,7 @@ func playTurn(
 	for i := 0; i < len(player.Hands); i++ {
 		currHand := player.Hands[i]
 		for { // Loops until player busts or stands
-			room.Log.Printf("%s's hand is %v", player.Name, currHand)
+			room.Log.Printf("%s's hand is %v", player.Name, *currHand)
 			room.Log.Printf("Current count: %d", currHand.Sum)
 
 			// Send current hand
@@ -209,8 +209,11 @@ func playRound(deck *models.Deck, room *server.Room) {
 }
 
 func playRoom(room *server.Room) {
+	seed := time.Now().UnixNano()
+	room.Log.Info(seed)
+
 	room.Log.Info("Getting a new shuffled deck of cards")
-	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe)
+	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe, seed)
 
 	room.Log.Info("Lets play!")
 	room.SendAll(messages.START_MSG)
@@ -227,7 +230,7 @@ func playRoom(room *server.Room) {
 
 		playRound(&deck, room)
 
-		deck = *models.ShuffleDeckIfLow(&deck, 150)
+		models.ShuffleDeckIfLow(&deck, settings.ShuffleThreshold)
 	}
 
 	room.Log.Info(DIVIDER)

@@ -5,6 +5,7 @@ import (
 	"blackjack/messages"
 	"blackjack/models"
 	"fmt"
+	"io"
 	"net"
 	"os"
 
@@ -136,13 +137,17 @@ func (room *Room) GetPlayers() []*models.Player {
 func MakeLog(id string) *logrus.Logger {
 	filename := fmt.Sprintf("./logs/%s.log", id)
 	log := logrus.New()
-	log.Out = os.Stdout
 
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
-		log.Out = file
+		// Log to file and Stdout in the same time for easy debugging
+		mw := io.MultiWriter(os.Stdout, file)
+
+		// Set the logger's output to the multiwriter
+		log.SetOutput(mw)
 	} else {
 		log.Info("Failed to log to file, using default stderr")
+		log.SetOutput(os.Stdout)
 	}
 
 	return log

@@ -3,7 +3,6 @@ package models
 import (
 	"math"
 	"math/rand"
-	"time"
 )
 
 var cardValues = [...]string{"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"}
@@ -26,51 +25,63 @@ type deckInterface interface {
 }
 
 type Deck struct {
-	cards []Card
+	randSource    rand.Source
+	randGenerator *rand.Rand
+	size          int
+	cards         []Card
 }
 
-func GetNewDeck(size int) Deck {
+func GetNewDeck(size int, seed int64) Deck {
 	deck := Deck{}
-	deck.cards = make([]Card, 0, size)
-	for i := 0; i < size; i++ {
+	deck.randSource = rand.NewSource(seed)
+	deck.randGenerator = rand.New(deck.randSource)
+	deck.size = size
+	deck.BuildDeck()
+
+	return deck
+}
+
+func GetNewShuffledDeck(size int, seed int64) Deck {
+	deck := GetNewDeck(size, seed)
+	ShuffleDeck(deck)
+	return deck
+}
+
+// Initialize deck with card values
+func (deck *Deck) BuildDeck() {
+	deck.cards = make([]Card, 0, deck.size)
+	for i := 0; i < deck.size; i++ {
 		for _, suit := range suites {
 			for _, val := range cardValues {
 				deck.cards = append(deck.cards, Card{val, suit, cardValuesMap[val]})
 			}
 		}
 	}
-	return deck
-}
-
-func GetNewShuffledDeck(size int) Deck {
-	deck := GetNewDeck(size)
-	ShuffleDeck(deck)
-	return deck
 }
 
 func (deck *Deck) DealCard() Card {
-	dealtCard := deck.cards[0]
-	deck.cards = deck.cards[1:]
+	var dealtCard Card
+	dealtCard, deck.cards = deck.cards[0], deck.cards[1:]
 	return dealtCard
 }
 
-func ShuffleDeckIfLow(deck *Deck, threshold int) *Deck {
-	if len(deck.cards) > threshold {
-		return deck
-	}
-	newDeck := GetNewShuffledDeck(6)
-	return &newDeck
-}
-
 func ShuffleDeck(deck Deck) {
-	source := rand.NewSource(time.Now().UnixNano())
-	randGenerator := rand.New(source)
+	// seed := int64(1683546845923823596)
 	for i := range deck.cards {
-		j := randGenerator.Intn(i + 1)
+		j := deck.randGenerator.Intn(i + 1)
 		deck.cards[i], deck.cards[j] = deck.cards[j], deck.cards[i]
 	}
 }
 
+func ShuffleDeckIfLow(deck *Deck, threshold int) {
+	if len(deck.cards) > threshold {
+		return
+	}
+	deck.BuildDeck()
+	ShuffleDeck(*deck)
+}
+
+// Used for testing specific behaviour
 func ShanoShuffleDeck(deck *Deck) {
 	deck.cards[0] = Card{ValueStr: "A", Suit: "Spades", value: 11}
 	deck.cards[1] = Card{ValueStr: "A", Suit: "Clubs", value: 11}

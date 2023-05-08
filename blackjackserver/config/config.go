@@ -3,6 +3,7 @@ package config
 import "time"
 
 const NumDecksInShoe int = 6
+const ShuffleThreshold int = 150
 const RoomSize int = 2
 const NumRoundsPerGame int = 3
 const InitialBuyIn int = 100

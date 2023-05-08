@@ -234,7 +234,7 @@ func TestHand(t *testing.T) {
 		hand.RemoveCard()
 	})
 
-	t.Run("test CanSplit", func(t *testing.T) {
+	t.Run("test can split", func(t *testing.T) {
 		hand := Hand{}
 		kingCard := Card{
 			ValueStr: "K",
