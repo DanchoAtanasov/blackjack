@@ -16,3 +16,4 @@ coverage:
 clean:
 	rm -rf logs/*
 	rm -rf results/*
+	rm -rf audit/*

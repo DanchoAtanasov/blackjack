@@ -13,42 +13,6 @@ import (
 
 const DIVIDER string = "---------------------------------"
 
-func readPlayerAction(room *server.Room) string {
-	var input string
-	retries := 5
-	for {
-		input = room.ReadCurrPlayer()
-		if input == messages.HIT_MSG || input == messages.STAND_MSG || input == messages.SPLIT_MSG {
-			break
-		}
-		if input == messages.LEAVE_MSG {
-			fmt.Println("Got leave message, leaving")
-			return "Out"
-		}
-
-		if input == "EOF" {
-			return "Out"
-		}
-		retries -= 1
-		if retries == 0 {
-			return "Out"
-		}
-		fmt.Printf("Wrong input %s, Try again\n", input)
-	}
-	return input
-}
-
-func readDealerAction(hand models.Hand) string {
-	if hand.Sum > 17 {
-		return messages.STAND_MSG
-	}
-	// Dealer stands on a soft 17 as per the UK rules
-	if hand.Sum == 17 && hand.NumAces <= 0 {
-		return messages.STAND_MSG
-	}
-	return messages.HIT_MSG
-}
-
 func saveResultToFile(players []*models.Player, id string) {
 	var outputString string
 	for i := range players {
@@ -61,6 +25,17 @@ func saveResultToFile(players []*models.Player, id string) {
 		// TODO catch error
 	}
 	fmt.Println("Results saved to file: ", id)
+}
+
+func readDealerAction(hand models.Hand) string {
+	if hand.Sum > 17 {
+		return messages.STAND_MSG
+	}
+	// Dealer stands on a soft 17 as per the UK rules
+	if hand.Sum == 17 && hand.NumAces <= 0 {
+		return messages.STAND_MSG
+	}
+	return messages.HIT_MSG
 }
 
 func playTurn(
@@ -101,7 +76,7 @@ func playTurn(
 			if player.IsDealer {
 				input = readDealerAction(*currHand)
 			} else {
-				input = readPlayerAction(room)
+				input = room.ReadPlayerAction()
 			}
 
 			if input == messages.STAND_MSG {
@@ -124,7 +99,6 @@ func playTurn(
 				break
 			} else {
 				fmt.Printf("Message: %s not recognized /n", input)
-				fmt.Println(messages.SPLIT_MSG)
 				currHand.AddCard(deck.DealCard())
 			}
 		}
@@ -210,7 +184,8 @@ func playRound(deck *models.Deck, room *server.Room) {
 
 func playRoom(room *server.Room) {
 	seed := time.Now().UnixNano()
-	room.Log.Info(seed)
+	// seed := int64(1683546845923823596)
+	room.Audit.Info(seed)
 
 	room.Log.Info("Getting a new shuffled deck of cards")
 	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe, seed)
@@ -249,10 +224,10 @@ func playRoom(room *server.Room) {
 func main() {
 	fmt.Println("Welcome to Blackjack")
 	fmt.Println("Running server:")
-	output := server.MakeServer()
-	go output.Serve()
+	serv := server.MakeServer()
+	go serv.Serve()
 	for {
-		newRoom := output.WaitForPlayers()
+		newRoom := serv.WaitForPlayers()
 		go playRoom(newRoom)
 	}
 }

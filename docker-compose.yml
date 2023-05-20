@@ -9,6 +9,7 @@ services:
     volumes:
       - ./blackjackserver/results:/root/app/results
       - ./blackjackserver/logs:/root/app/logs
+      - ./blackjackserver/audit:/root/app/audit
     environment:
       - REDIS_HOST=redis
     depends_on:

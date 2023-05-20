@@ -34,15 +34,19 @@ func (playerConn PlayerConn) saveDisconnectedPlayerDetails() {
 
 type Room struct {
 	Log         *logrus.Logger
+	Audit       *logrus.Logger
 	Id          string
 	playerConns []PlayerConn
+	IO          ioInterface
 }
 
 func MakeRoom() *Room {
 	room := Room{}
 	room.Id = uuid.New().String()
 	room.Log = MakeLog(room.Id)
+	room.Audit = MakeAuditLog(room.Id)
 	room.playerConns = make([]PlayerConn, 0, settings.RoomSize)
+	room.IO = MakeIO()
 
 	return &room
 }
@@ -87,7 +91,7 @@ func (room *Room) ChangePlayer() {
 
 func (room *Room) SendAll(msg string) {
 	for i := range room.playerConns {
-		SendData(room.playerConns[i].Conn, msg)
+		room.IO.SendData(room.playerConns[i].Conn, msg)
 	}
 }
 
@@ -96,7 +100,8 @@ func (room *Room) ReadInMessages() {
 		currPlayer := room.playerConns[i].player
 
 		// TODO add retry
-		message := ReadData(room.playerConns[i].Conn)
+		message := room.IO.ReadData(room.playerConns[i].Conn)
+		room.Audit.WithFields(logrus.Fields{"name": currPlayer.Name}).Info(message)
 		if message == "EOF" {
 			fmt.Println("Player has disconnected")
 			currPlayer.Active = false
@@ -107,6 +112,8 @@ func (room *Room) ReadInMessages() {
 		response, err := messages.DecodePlayerInMessage(message)
 		if err != nil {
 			fmt.Printf("Wrong player in response msg: %e\n", err)
+			currPlayer.Active = false
+			continue
 		}
 
 		if response.Playing {
@@ -118,12 +125,40 @@ func (room *Room) ReadInMessages() {
 	}
 }
 
+func (room *Room) ReadPlayerAction() string {
+	var input string
+	retries := 5
+	for {
+		input = room.ReadCurrPlayer()
+		if input == messages.HIT_MSG || input == messages.STAND_MSG || input == messages.SPLIT_MSG {
+			break
+		}
+		if input == messages.LEAVE_MSG {
+			fmt.Println("Got leave message, leaving")
+			return "Out"
+		}
+
+		if input == "EOF" {
+			return "Out"
+		}
+		retries -= 1
+		if retries == 0 {
+			return "Out"
+		}
+		fmt.Printf("Wrong input %s, Try again\n", input)
+	}
+
+	player := room.GetCurrPlayerConn().player
+	room.Audit.WithFields(logrus.Fields{"name": player.Name}).Info(input)
+	return input
+}
+
 func (room *Room) SendCurrPlayer(msg string) {
-	SendData(room.GetCurrPlayerConn().Conn, msg)
+	room.IO.SendData(room.GetCurrPlayerConn().Conn, msg)
 }
 
 func (room *Room) ReadCurrPlayer() string {
-	return ReadData(room.GetCurrPlayerConn().Conn)
+	return room.IO.ReadData(room.GetCurrPlayerConn().Conn)
 }
 
 func (room *Room) GetPlayers() []*models.Player {
@@ -147,6 +182,22 @@ func MakeLog(id string) *logrus.Logger {
 		log.SetOutput(mw)
 	} else {
 		log.Info("Failed to log to file, using default stderr")
+		log.SetOutput(os.Stdout)
+	}
+
+	return log
+}
+
+func MakeAuditLog(id string) *logrus.Logger {
+	filename := fmt.Sprintf("./audit/%s.log", id)
+	log := logrus.New()
+	log.SetFormatter(&logrus.JSONFormatter{})
+
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		log.SetOutput(file)
+	} else {
+		log.Warn("Failed to log to audit file, using default stderr")
 		log.SetOutput(os.Stdout)
 	}
 
