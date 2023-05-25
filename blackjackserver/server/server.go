@@ -27,8 +27,8 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 
 	fmt.Println("Asking client for a session token")
 	var sessionJwt Token
-	// TODO rethink this call to MakeIO
-	msg := MakeIO().ReadData(*conn)
+	msg := server.room.IO.ReadData(*conn)
+	server.room.Audit.Info(msg)
 	fmt.Printf("Received %s", msg)
 	err := json.Unmarshal([]byte(msg), &sessionJwt)
 	if err != nil {

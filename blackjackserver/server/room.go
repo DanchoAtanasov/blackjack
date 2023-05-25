@@ -128,6 +128,7 @@ func (room *Room) ReadInMessages() {
 func (room *Room) ReadPlayerAction() string {
 	var input string
 	retries := 5
+	player := room.GetCurrPlayerConn().player
 	for {
 		input = room.ReadCurrPlayer()
 		if input == messages.HIT_MSG || input == messages.STAND_MSG || input == messages.SPLIT_MSG {
@@ -135,6 +136,7 @@ func (room *Room) ReadPlayerAction() string {
 		}
 		if input == messages.LEAVE_MSG {
 			fmt.Println("Got leave message, leaving")
+			room.Audit.WithFields(logrus.Fields{"name": player.Name}).Info(input)
 			return "Out"
 		}
 
@@ -148,7 +150,6 @@ func (room *Room) ReadPlayerAction() string {
 		fmt.Printf("Wrong input %s, Try again\n", input)
 	}
 
-	player := room.GetCurrPlayerConn().player
 	room.Audit.WithFields(logrus.Fields{"name": player.Name}).Info(input)
 	return input
 }

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gobwas/ws/wsutil"
@@ -17,6 +18,7 @@ import (
 type ioInterface interface {
 	ReadData(net.Conn) string
 	SendData(net.Conn, string)
+	GetSeed(net.Conn) int64
 }
 
 type PlayIO struct {
@@ -53,8 +55,32 @@ func (playIO *PlayIO) SendData(conn net.Conn, msg string) {
 	}
 }
 
+func (playIO *PlayIO) GetSeed(net.Conn) int64 {
+	return time.Now().UnixNano()
+}
+
 type AuditIO struct {
-	filePath string "./audit/d8b952dd-e0cd-4473-81ad-698a858bb21a.log"
+	file    *os.File
+	scanner *bufio.Scanner
+}
+
+func MakeAuditIO(filePath string) *AuditIO {
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		panic("File cannot be opened")
+	}
+
+	// Create a new scanner
+	scanner := bufio.NewScanner(file)
+
+	auditIO := AuditIO{file: file, scanner: scanner}
+	return &auditIO
+}
+
+func (auditIO *AuditIO) Close() {
+	auditIO.file.Close()
 }
 
 func (auditIO *AuditIO) ReadData(conn net.Conn) string {
@@ -65,42 +91,38 @@ func (auditIO *AuditIO) ReadData(conn net.Conn) string {
 		Time  string
 	}
 
-	// Open the file
-	file, err := os.Open(auditIO.filePath)
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-	}
-	defer file.Close()
-
-	// Create a new scanner
-	scanner := bufio.NewScanner(file)
-
-	// Iterate over each line
-	for scanner.Scan() {
-		// line := scanner.Text()
-
-		fmt.Println(scanner.Bytes())
-		// Parse JSON
-		var input Input
-		err := json.Unmarshal(scanner.Bytes(), &input)
-		if err != nil {
-			fmt.Println("Error parsing JSON:", err)
-			continue
+	if !auditIO.scanner.Scan() {
+		if err := auditIO.scanner.Err(); err != nil {
+			fmt.Println("Error scanning file:", err)
+			panic("Scan failed")
 		}
-		fmt.Println(input)
-
-		// Access parsed data
-		fmt.Println("Msg:", input.Msg)
 	}
 
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error scanning file:", err)
+	var input Input
+	err := json.Unmarshal(auditIO.scanner.Bytes(), &input)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		panic("Json not parsed")
 	}
-	return "bla"
+	fmt.Println(input)
+
+	// Access parsed data
+	fmt.Println("Msg:", input.Msg)
+
+	return input.Msg
 }
 
 // Do nothing when sending data in audit mode
 func (auditIO *AuditIO) SendData(conn net.Conn, msg string) {}
+
+func (auditIO *AuditIO) GetSeed(conn net.Conn) int64 {
+	msg := auditIO.ReadData(conn)
+	seed, err := strconv.ParseInt(msg, 10, 64)
+	if err != nil {
+		panic("cant read seed")
+	}
+	return seed
+}
 
 func MakeIO() ioInterface {
 	if settings.Mode == settings.PlayMode {
@@ -108,7 +130,7 @@ func MakeIO() ioInterface {
 		return &PlayIO{}
 	} else if settings.Mode == settings.AuditMode {
 		fmt.Println("Audit mode")
-		return &AuditIO{}
+		return MakeAuditIO("./audit/2c945a5d-e9f7-41e2-a55b-a00a6a08a783.log")
 	} else {
 		panic("Mode not recognized")
 	}

@@ -183,8 +183,7 @@ func playRound(deck *models.Deck, room *server.Room) {
 }
 
 func playRoom(room *server.Room) {
-	seed := time.Now().UnixNano()
-	// seed := int64(1683546845923823596)
+	seed := room.IO.GetSeed(room.GetCurrPlayerConn().Conn)
 	room.Audit.Info(seed)
 
 	room.Log.Info("Getting a new shuffled deck of cards")
