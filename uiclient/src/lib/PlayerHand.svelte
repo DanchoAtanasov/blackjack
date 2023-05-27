@@ -36,7 +36,7 @@
         <img alt="card" class="playing-card" src={getCardAsset(playerCard.ValueStr, playerCard.Suit)} />
       {/each}
       <p>Sum: {playerHand.sum}</p>
-      {#if playerHand.cards[1] !== undefined && playerHand.cards[0].ValueStr === playerHand.cards[1].ValueStr}
+      {#if playerHand.cards.length === 2 && playerHand.cards[0].ValueStr === playerHand.cards[1].ValueStr}
         <SplitButton on:split/>
       {/if}
     </div>
