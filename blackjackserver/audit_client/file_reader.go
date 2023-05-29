@@ -1,18 +1,20 @@
 package main
 
 import (
+	"blackjack/server"
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 )
 
-type AuditIO struct {
+type FileIO struct {
 	file    *os.File
 	scanner *bufio.Scanner
 }
 
-func MakeAuditIO(filePath string) *AuditIO {
+func MakeFileIO(filePath string) *FileIO {
 	// Open the file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -23,15 +25,27 @@ func MakeAuditIO(filePath string) *AuditIO {
 	// Create a new scanner
 	scanner := bufio.NewScanner(file)
 
-	auditIO := AuditIO{file: file, scanner: scanner}
+	auditIO := FileIO{file: file, scanner: scanner}
 	return &auditIO
 }
 
-func (auditIO *AuditIO) Close() {
-	auditIO.file.Close()
+func (fileIO *FileIO) Close() {
+	fileIO.file.Close()
 }
 
-func (auditIO *AuditIO) ReadData() string {
+type SessionIO struct{ *FileIO }
+
+func MakeSessIO(filePath string) *SessionIO {
+	return &SessionIO{MakeFileIO(filePath)}
+}
+
+type ConnIO struct{ *FileIO }
+
+func MakeConnIO(filePath string) *ConnIO {
+	return &ConnIO{MakeFileIO(filePath)}
+}
+
+func (connIO *ConnIO) ReadData() string {
 	type Input struct {
 		Level string
 		Msg   string
@@ -39,15 +53,15 @@ func (auditIO *AuditIO) ReadData() string {
 		Time  string
 	}
 
-	if !auditIO.scanner.Scan() {
-		if err := auditIO.scanner.Err(); err != nil {
+	if !connIO.scanner.Scan() {
+		if err := connIO.scanner.Err(); err != nil {
 			fmt.Println("Error scanning file:", err)
 			panic("Scan failed")
 		}
 	}
 
 	var input Input
-	err := json.Unmarshal(auditIO.scanner.Bytes(), &input)
+	err := json.Unmarshal(connIO.scanner.Bytes(), &input)
 	if err != nil {
 		fmt.Println("Error parsing JSON:", err)
 		panic("Json not parsed")
@@ -58,4 +72,37 @@ func (auditIO *AuditIO) ReadData() string {
 	fmt.Println("Msg:", input.Msg)
 
 	return input.Msg
+}
+
+type SessInput struct {
+	Level         string
+	Msg           string
+	Time          string
+	Action        string
+	PlayerDetails server.PlayerDetails
+	SessionId     string
+	Type          string
+	Seed          int
+}
+
+func (sessIO *SessionIO) ReadData() (SessInput, error) {
+	var err error = nil
+	if !sessIO.scanner.Scan() {
+		if err = sessIO.scanner.Err(); err != nil {
+			fmt.Println("Error scanning file:", err)
+			return SessInput{}, err
+		}
+		return SessInput{}, io.EOF
+	}
+
+	var input SessInput
+	err = json.Unmarshal(sessIO.scanner.Bytes(), &input)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		fmt.Println(sessIO.scanner.Bytes())
+		panic("Json not parsed")
+	}
+	fmt.Println(input)
+
+	return input, err
 }

@@ -25,7 +25,6 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	server.newConnectionMutex.Lock()
 	defer server.newConnectionMutex.Unlock()
 	fmt.Println("Registering player")
-	server.room.Audit.WithFields(logrus.Fields{"type": "system", "what": "new_player"}).Info()
 
 	fmt.Println("Asking client for a session token")
 	var sessionJwt Token
@@ -50,7 +49,16 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 
 	fmt.Println("Getting player details")
 	pd := getPlayerDetails(sessionId)
-	server.room.Audit.Info(pd)
+
+	// Log to room audit log
+	server.room.Audit.WithFields(
+		logrus.Fields{
+			"type":          "system",
+			"action":        "newPlayer",
+			"sessionId":     sessionId,
+			"playerDetails": pd,
+		},
+	).Info()
 
 	newPlayer := models.Player{
 		Name:    pd.Name,

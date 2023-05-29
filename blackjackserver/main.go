@@ -9,6 +9,8 @@ import (
 	"blackjack/messages"
 	"blackjack/models"
 	"blackjack/server"
+
+	"github.com/sirupsen/logrus"
 )
 
 const DIVIDER string = "---------------------------------"
@@ -184,7 +186,13 @@ func playRound(deck *models.Deck, room *server.Room) {
 
 func playRoom(room *server.Room) {
 	seed := room.IO.GetSeed(room.GetCurrPlayerConn().Conn)
-	room.Audit.Info(seed)
+	room.Audit.WithFields(
+		logrus.Fields{
+			"type":   "system",
+			"action": "seed",
+			"seed":   seed,
+		},
+	).Info()
 
 	room.Log.Info("Getting a new shuffled deck of cards")
 	deck := models.GetNewShuffledDeck(settings.NumDecksInShoe, seed)

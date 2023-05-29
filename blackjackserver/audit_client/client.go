@@ -3,10 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
+	"sync"
+	"time"
 
 	"blackjack/messages"
+	"blackjack/server"
+
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
@@ -48,7 +53,9 @@ func readData(conn *net.Conn) (string, error) {
 	return msg, err
 }
 
-func play(io *AuditIO) {
+func play(io *ConnIO, wg *sync.WaitGroup, pd *server.PlayerDetails) {
+	defer wg.Done()
+
 	// Start websocket connection to blackjack server
 	conn, _, _, err := ws.DefaultDialer.Dial(
 		context.Background(),
@@ -60,7 +67,7 @@ func play(io *AuditIO) {
 	}
 	defer conn.Close()
 
-	fmt.Println("Connected")
+	fmt.Printf("%s Connected\n", pd.Name)
 	fmt.Println("Getting session token from file")
 	sessionTokenMsg := io.ReadData()
 	sendData(&conn, sessionTokenMsg)
@@ -72,6 +79,7 @@ func play(io *AuditIO) {
 			fmt.Printf("read data failed: %s\n", err)
 			return
 		}
+
 		fmt.Printf("Received: %s\n", msg)
 		if msg == messages.PLAYING_THIS_HAND_MSG {
 			fmt.Println("Sending in message")
@@ -80,9 +88,12 @@ func play(io *AuditIO) {
 			fmt.Println("BUST")
 			continue
 		}
-		isDealerHand, player, err := messages.DecodePlayerHandMessage(msg)
+		_, player, err := messages.DecodePlayerHandMessage(msg)
 		// TODO: send when it's this current player's turn
-		if err == nil && !isDealerHand {
+		if err == nil {
+			if player.Name != pd.Name {
+				continue
+			}
 			if player.Hands[0].IsBust() {
 				continue
 			}
@@ -93,8 +104,32 @@ func play(io *AuditIO) {
 }
 
 func main() {
-	filename := "../audit/95fa3923-00f4-4d06-90cd-6db76f649109.log"
-	io := MakeAuditIO(filename)
-	// go play(io)
-	play(io)
+	var wg sync.WaitGroup
+
+	sessionLogFileName := "../audit/9048601e-afd0-47cc-9213-ffcc9b3293a4.log"
+	sessionIO := MakeSessIO(sessionLogFileName)
+
+	for {
+		input, err := sessionIO.ReadData()
+		if err != nil {
+			fmt.Println(err)
+			if err == io.EOF {
+				break
+			} else {
+				panic("Session read failed")
+			}
+		}
+
+		server.SetPlayerDetails(input.SessionId, input.PlayerDetails)
+		wg.Add(1)
+		connectionLogFileName := fmt.Sprintf("../audit/%s.log", input.SessionId)
+		connIO := MakeConnIO(connectionLogFileName)
+
+		time.Sleep(1 * time.Second)
+
+		go play(connIO, &wg, &input.PlayerDetails)
+
+	}
+	wg.Wait()
+	fmt.Println("All players finished")
 }

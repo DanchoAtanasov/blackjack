@@ -86,7 +86,7 @@ func getPlayerDetails(sessionId string) PlayerDetails {
 	return pd
 }
 
-func setPlayerDetails(sessionId string, pd PlayerDetails) {
+func SetPlayerDetails(sessionId string, pd PlayerDetails) {
 	fmt.Printf("Setting player details for session: %s\n", sessionId)
 	// TODO: reuse an existing redis client connection
 	client := redis.NewClient(&redis.Options{

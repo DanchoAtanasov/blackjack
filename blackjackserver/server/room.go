@@ -30,7 +30,7 @@ func (playerConn PlayerConn) saveDisconnectedPlayerDetails() {
 		CurrBet: player.CurrBet,
 	}
 	fmt.Println("Updating player details for disconnected player")
-	setPlayerDetails(playerConn.sessionId, pd)
+	SetPlayerDetails(playerConn.sessionId, pd)
 }
 
 type Room struct {
