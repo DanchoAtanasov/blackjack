@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/gobwas/ws"
+	"github.com/sirupsen/logrus"
 
 	settings "blackjack/config"
 	"blackjack/models"
@@ -24,11 +25,15 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	server.newConnectionMutex.Lock()
 	defer server.newConnectionMutex.Unlock()
 	fmt.Println("Registering player")
+	server.room.Audit.WithFields(logrus.Fields{"type": "system", "what": "new_player"}).Info()
 
 	fmt.Println("Asking client for a session token")
 	var sessionJwt Token
 	msg := server.room.IO.ReadData(*conn)
-	server.room.Audit.Info(msg)
+	if msg == "EOF" {
+		return
+	}
+
 	fmt.Printf("Received %s", msg)
 	err := json.Unmarshal([]byte(msg), &sessionJwt)
 	if err != nil {
@@ -39,8 +44,13 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	fmt.Println(sessionJwt)
 	sessionId := parseJwt(sessionJwt.Token)
 
+	fmt.Printf("Making connection log: %s", sessionId)
+	connectionLog := MakeAuditLog(sessionId)
+	connectionLog.Info(msg)
+
 	fmt.Println("Getting player details")
 	pd := getPlayerDetails(sessionId)
+	server.room.Audit.Info(pd)
 
 	newPlayer := models.Player{
 		Name:    pd.Name,
@@ -54,9 +64,10 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 	}
 
 	playerConn := PlayerConn{
-		sessionId: sessionId,
-		player:    &newPlayer,
-		Conn:      *conn,
+		sessionId:     sessionId,
+		player:        &newPlayer,
+		Conn:          *conn,
+		ConnectionLog: connectionLog,
 	}
 
 	server.connQueue = append(server.connQueue, playerConn)

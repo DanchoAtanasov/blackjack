@@ -66,7 +66,6 @@ func (deck *Deck) DealCard() Card {
 }
 
 func ShuffleDeck(deck Deck) {
-	// seed := int64(1683546845923823596)
 	for i := range deck.cards {
 		j := deck.randGenerator.Intn(i + 1)
 		deck.cards[i], deck.cards[j] = deck.cards[j], deck.cards[i]

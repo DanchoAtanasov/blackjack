@@ -74,12 +74,16 @@ func playerHandMessage(player models.Player) string {
 	return makeJsonMessage("PlayerHand", string(messageBytes))
 }
 
-func DecodePlayerHandMessage(msg string) (models.Hand, error) {
+func DecodePlayerHandMessage(msg string) (bool, *models.Player, error) {
 	var message Message
 	err := json.Unmarshal([]byte(msg), &message)
-	var hand models.Hand
-	err = json.Unmarshal([]byte(message.Message), &hand)
-	return hand, err
+	isDealerHand := false
+	if message.Type == "DealerHand" {
+		isDealerHand = true
+	}
+	var player models.Player
+	err = json.Unmarshal([]byte(message.Message), &player)
+	return isDealerHand, &player, err
 }
 
 // TODO improve names

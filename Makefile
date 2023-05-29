@@ -13,6 +13,9 @@ stop:
 db:
 	docker exec -it database psql -U postgres
 
+blackjack:
+	docker exec -it blackjackserver /bin/sh
+
 redis:
 	docker exec -it redis redis-cli
 

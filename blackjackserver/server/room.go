@@ -15,9 +15,10 @@ import (
 
 // Struct used to couple the player model and the connection to them
 type PlayerConn struct {
-	sessionId string
-	player    *models.Player
-	Conn      net.Conn
+	sessionId     string
+	player        *models.Player
+	Conn          net.Conn
+	ConnectionLog *logrus.Logger
 }
 
 func (playerConn PlayerConn) saveDisconnectedPlayerDetails() {
@@ -97,11 +98,12 @@ func (room *Room) SendAll(msg string) {
 
 func (room *Room) ReadInMessages() {
 	for i := range room.playerConns {
-		currPlayer := room.playerConns[i].player
+		currConnection := room.playerConns[i]
+		currPlayer := currConnection.player
 
 		// TODO add retry
-		message := room.IO.ReadData(room.playerConns[i].Conn)
-		room.Audit.WithFields(logrus.Fields{"name": currPlayer.Name}).Info(message)
+		message := room.IO.ReadData(currConnection.Conn)
+		currConnection.ConnectionLog.Info(message)
 		if message == "EOF" {
 			fmt.Println("Player has disconnected")
 			currPlayer.Active = false
@@ -128,7 +130,7 @@ func (room *Room) ReadInMessages() {
 func (room *Room) ReadPlayerAction() string {
 	var input string
 	retries := 5
-	player := room.GetCurrPlayerConn().player
+	currConnection := room.GetCurrPlayerConn()
 	for {
 		input = room.ReadCurrPlayer()
 		if input == messages.HIT_MSG || input == messages.STAND_MSG || input == messages.SPLIT_MSG {
@@ -136,7 +138,7 @@ func (room *Room) ReadPlayerAction() string {
 		}
 		if input == messages.LEAVE_MSG {
 			fmt.Println("Got leave message, leaving")
-			room.Audit.WithFields(logrus.Fields{"name": player.Name}).Info(input)
+			currConnection.ConnectionLog.Info(input)
 			return "Out"
 		}
 
@@ -150,7 +152,7 @@ func (room *Room) ReadPlayerAction() string {
 		fmt.Printf("Wrong input %s, Try again\n", input)
 	}
 
-	room.Audit.WithFields(logrus.Fields{"name": player.Name}).Info(input)
+	currConnection.ConnectionLog.Info(input)
 	return input
 }
 

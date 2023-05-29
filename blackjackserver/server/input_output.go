@@ -21,8 +21,7 @@ type ioInterface interface {
 	GetSeed(net.Conn) int64
 }
 
-type PlayIO struct {
-}
+type PlayIO struct{}
 
 func (playIO *PlayIO) ReadData(conn net.Conn) string {
 	// TODO: Improve connection closed vs read timed out error handling
@@ -56,7 +55,8 @@ func (playIO *PlayIO) SendData(conn net.Conn, msg string) {
 }
 
 func (playIO *PlayIO) GetSeed(net.Conn) int64 {
-	return time.Now().UnixNano()
+	return 1685355255139882952
+	// return time.Now().UnixNano()
 }
 
 type AuditIO struct {
@@ -113,7 +113,12 @@ func (auditIO *AuditIO) ReadData(conn net.Conn) string {
 }
 
 // Do nothing when sending data in audit mode
-func (auditIO *AuditIO) SendData(conn net.Conn, msg string) {}
+func (auditIO *AuditIO) SendData(conn net.Conn, msg string) {
+	err := wsutil.WriteServerText(conn, []byte(msg))
+	if err != nil {
+		fmt.Println("Send failed, ", err)
+	}
+}
 
 func (auditIO *AuditIO) GetSeed(conn net.Conn) int64 {
 	msg := auditIO.ReadData(conn)
@@ -130,7 +135,7 @@ func MakeIO() ioInterface {
 		return &PlayIO{}
 	} else if settings.Mode == settings.AuditMode {
 		fmt.Println("Audit mode")
-		return MakeAuditIO("./audit/2c945a5d-e9f7-41e2-a55b-a00a6a08a783.log")
+		return MakeAuditIO(settings.AuditLogFile)
 	} else {
 		panic("Mode not recognized")
 	}
