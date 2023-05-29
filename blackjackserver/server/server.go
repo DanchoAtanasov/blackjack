@@ -57,6 +57,7 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 			"action":        "newPlayer",
 			"sessionId":     sessionId,
 			"playerDetails": pd,
+			"round":         server.room.CurrRound,
 		},
 	).Info()
 

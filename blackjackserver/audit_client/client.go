@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"os"
 	"sync"
@@ -53,8 +54,21 @@ func readData(conn *net.Conn) (string, error) {
 	return msg, err
 }
 
-func play(io *ConnIO, wg *sync.WaitGroup, pd *server.PlayerDetails) {
+func play(io *ConnIO, wg *sync.WaitGroup, roundCond *sync.Cond, currRound *int, playerConn *PlayerConn) {
 	defer wg.Done()
+
+	roundCond.L.Lock()
+
+	for {
+		fmt.Printf("Waiting on cond %s\n", playerConn.playerDetails.Name)
+		roundCond.Wait()
+		// fmt.Printf("%s unlocked\n", playerConn.playerDetails.Name)
+		if *currRound >= playerConn.startRound {
+			fmt.Printf("%s will start playing\n", playerConn.playerDetails.Name)
+			break
+		}
+	}
+	roundCond.L.Unlock()
 
 	// Start websocket connection to blackjack server
 	conn, _, _, err := ws.DefaultDialer.Dial(
@@ -67,10 +81,12 @@ func play(io *ConnIO, wg *sync.WaitGroup, pd *server.PlayerDetails) {
 	}
 	defer conn.Close()
 
-	fmt.Printf("%s Connected\n", pd.Name)
+	fmt.Printf("%s Connected\n", playerConn.playerDetails.Name)
 	fmt.Println("Getting session token from file")
 	sessionTokenMsg := io.ReadData()
 	sendData(&conn, sessionTokenMsg)
+
+	oldCurrRound := *currRound
 
 	for {
 		fmt.Println("Waiting for ws message")
@@ -83,31 +99,52 @@ func play(io *ConnIO, wg *sync.WaitGroup, pd *server.PlayerDetails) {
 		fmt.Printf("Received: %s\n", msg)
 		if msg == messages.PLAYING_THIS_HAND_MSG {
 			fmt.Println("Sending in message")
+			roundCond.L.Lock()
+			fmt.Printf("Comparing %d and %d\n", oldCurrRound+1, *currRound)
+			*currRound = int(math.Max(float64(oldCurrRound+1), float64(*currRound)))
+			roundCond.Broadcast()
+			roundCond.L.Unlock()
 			sendData(&conn, io.ReadData())
+			continue
 		} else if msg == messages.BUST_MSG {
 			fmt.Println("BUST")
 			continue
 		}
 		_, player, err := messages.DecodePlayerHandMessage(msg)
-		// TODO: send when it's this current player's turn
 		if err == nil {
-			if player.Name != pd.Name {
+			if player.Name != playerConn.playerDetails.Name {
 				continue
 			}
 			if player.Hands[0].IsBust() {
 				continue
 			}
 			fmt.Println("Sending message")
-			sendData(&conn, io.ReadData())
+			sendMsg := io.ReadData()
+			sendData(&conn, sendMsg)
+			if sendMsg == messages.LEAVE_MSG {
+				break
+			}
 		}
 	}
 }
 
+type PlayerConn struct {
+	sessionId     string
+	playerDetails *server.PlayerDetails
+	startRound    int
+}
+
 func main() {
 	var wg sync.WaitGroup
+	var currRound int = 0
+	roundMutex := &sync.Mutex{}
+	roundCond := sync.NewCond(roundMutex)
 
-	sessionLogFileName := "../audit/9048601e-afd0-47cc-9213-ffcc9b3293a4.log"
+	sessionID := "8a905114-45f2-4d41-8d82-f084e58058cb"
+	sessionLogFileName := fmt.Sprintf("../audit/%s.log", sessionID)
 	sessionIO := MakeSessIO(sessionLogFileName)
+
+	playersInSession := []PlayerConn{}
 
 	for {
 		input, err := sessionIO.ReadData()
@@ -121,15 +158,27 @@ func main() {
 		}
 
 		server.SetPlayerDetails(input.SessionId, input.PlayerDetails)
-		wg.Add(1)
-		connectionLogFileName := fmt.Sprintf("../audit/%s.log", input.SessionId)
-		connIO := MakeConnIO(connectionLogFileName)
-
-		time.Sleep(1 * time.Second)
-
-		go play(connIO, &wg, &input.PlayerDetails)
+		playersInSession = append(playersInSession, PlayerConn{
+			sessionId:     input.SessionId,
+			playerDetails: &input.PlayerDetails,
+			startRound:    input.Round,
+		})
 
 	}
+
+	time.Sleep(2 * time.Second)
+
+	for i := range playersInSession {
+		playerSession := playersInSession[i]
+		wg.Add(1)
+		connectionLogFileName := fmt.Sprintf("../audit/%s.log", playerSession.sessionId)
+		connIO := MakeConnIO(connectionLogFileName)
+
+		go play(connIO, &wg, roundCond, &currRound, &playerSession)
+
+	}
+	time.Sleep(1 * time.Second)
+	roundCond.Broadcast()
 	wg.Wait()
 	fmt.Println("All players finished")
 }

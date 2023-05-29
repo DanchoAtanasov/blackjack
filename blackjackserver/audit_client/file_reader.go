@@ -83,6 +83,7 @@ type SessInput struct {
 	SessionId     string
 	Type          string
 	Seed          int
+	Round         int
 }
 
 func (sessIO *SessionIO) ReadData() (SessInput, error) {

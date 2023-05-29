@@ -39,6 +39,7 @@ type Room struct {
 	Id          string
 	playerConns []PlayerConn
 	IO          ioInterface
+	CurrRound   int
 }
 
 func MakeRoom() *Room {
@@ -48,6 +49,7 @@ func MakeRoom() *Room {
 	room.Audit = MakeAuditLog(room.Id)
 	room.playerConns = make([]PlayerConn, 0, settings.RoomSize)
 	room.IO = MakeIO()
+	room.CurrRound = 0
 
 	return &room
 }
