@@ -19,6 +19,7 @@ RUN mkdir -p /root/app
 WORKDIR /root/app
 
 COPY --from=builder /usr/local/bin/app ./
+COPY --from=builder /usr/local/bin/auditclient ./
 
 COPY ./keys/key.pub ./keys/key.pub
 

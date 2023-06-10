@@ -105,5 +105,10 @@ func (sessIO *SessionIO) ReadData() (SessInput, error) {
 	}
 	fmt.Println(input)
 
+	// Skip seed action
+	if input.Action == "seed" {
+		return sessIO.ReadData()
+	}
+
 	return input, err
 }

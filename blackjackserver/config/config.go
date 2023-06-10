@@ -1,6 +1,18 @@
 package config
 
-import "time"
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"time"
+)
+
+func GetEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
 
 // Blackjack game settings
 const NumDecksInShoe int = 6
@@ -18,5 +30,22 @@ const (
 	PlayMode int = iota
 	AuditMode
 )
-const Mode = PlayMode
-const AuditLogFile = "./audit/3f987ada-4c95-4acf-a466-1952085d7e5b.log"
+
+func getMode() int {
+	if GetEnv("MODE", "PLAY") == "AUDIT" {
+		fmt.Println("AUDIT MODE Son")
+		return AuditMode
+	}
+	return PlayMode
+}
+
+func GetSeed() int64 {
+	fmt.Println("Using audit seed")
+	seed, err := strconv.ParseInt(GetEnv("SEED", "NONE"), 10, 64)
+	if err != nil {
+		panic("Seed not read correctly")
+	}
+	return seed
+}
+
+var Mode = getMode()

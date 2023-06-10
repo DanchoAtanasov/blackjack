@@ -95,8 +95,8 @@ export default class Session {
     this.socket.send(JSON.stringify(leaveMessage));
     hasGameStarted.set(false);
     isGameOver.set(true);
-    // Doesn't seem to be closing the connection
-    this.socket.close();
+    console.log("Closing the connection");
+    // this.socket.close();
   }
 
   addMessageListeners() {

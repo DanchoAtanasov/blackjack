@@ -1,6 +1,7 @@
 package server
 
 import (
+	settings "blackjack/config"
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
@@ -38,6 +39,8 @@ type PlayerDetails struct {
 	CurrBet int
 }
 
+const INVALID_TOKEN = "INVALID"
+
 func parseJwt(tokenString string) string {
 	// Parse takes the token string and a function for looking up the key. The latter is especially
 	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
@@ -53,7 +56,13 @@ func parseJwt(tokenString string) string {
 		return PUBLIC_KEY, nil
 	})
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+	// If it's in play mode and token is invalid deny
+	if settings.Mode == settings.PlayMode && !token.Valid {
+		fmt.Println("Token is invalid")
+		return INVALID_TOKEN
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		fmt.Println(claims["token"])
 		return claims["token"].(string)
 	} else {

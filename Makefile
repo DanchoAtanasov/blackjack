@@ -21,3 +21,12 @@ redis:
 
 build:
 	docker-compose build
+
+aud:
+	echo "Running audit"
+	docker-compose up -d
+	docker exec -it blackjackserver ./auditclient
+	docker-compose stop
+
+env: 
+	docker-compose run blackjackserver env

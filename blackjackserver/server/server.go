@@ -42,6 +42,9 @@ func (server *Server) registerPlayer(conn *net.Conn) {
 
 	fmt.Println(sessionJwt)
 	sessionId := parseJwt(sessionJwt.Token)
+	if sessionId == INVALID_TOKEN {
+		return
+	}
 
 	fmt.Printf("Making connection log: %s", sessionId)
 	connectionLog := MakeAuditLog(sessionId)

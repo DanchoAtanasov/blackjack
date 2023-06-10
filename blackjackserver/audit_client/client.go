@@ -25,6 +25,9 @@ func getEnv(key, fallback string) string {
 }
 
 var API_SERVER_HOST string = getEnv("API_SERVER_HOST", "localhost")
+var BJ_SERVER_HOST string = getEnv("BJ_SERVER_HOST", "localhost")
+var SESSION_ID string = getEnv("SESSION_ID", "NOT_SET")
+var BJ_SERVER_PORT int = 8080
 
 type Player struct {
 	Name  string
@@ -62,7 +65,6 @@ func play(io *ConnIO, wg *sync.WaitGroup, roundCond *sync.Cond, currRound *int, 
 	for {
 		fmt.Printf("Waiting on cond %s\n", playerConn.playerDetails.Name)
 		roundCond.Wait()
-		// fmt.Printf("%s unlocked\n", playerConn.playerDetails.Name)
 		if *currRound >= playerConn.startRound {
 			fmt.Printf("%s will start playing\n", playerConn.playerDetails.Name)
 			break
@@ -73,7 +75,7 @@ func play(io *ConnIO, wg *sync.WaitGroup, roundCond *sync.Cond, currRound *int, 
 	// Start websocket connection to blackjack server
 	conn, _, _, err := ws.DefaultDialer.Dial(
 		context.Background(),
-		fmt.Sprintf("ws://%s/", "localhost:8080"),
+		fmt.Sprintf("ws://%s:%d/", BJ_SERVER_HOST, BJ_SERVER_PORT),
 	)
 	if err != nil {
 		fmt.Printf("Can not connect: %v\n", err)
@@ -135,13 +137,16 @@ type PlayerConn struct {
 }
 
 func main() {
+	if SESSION_ID == "NOT_SET" {
+		panic("SESSION_ID not set")
+	}
+
 	var wg sync.WaitGroup
 	var currRound int = 0
 	roundMutex := &sync.Mutex{}
 	roundCond := sync.NewCond(roundMutex)
 
-	sessionID := "8a905114-45f2-4d41-8d82-f084e58058cb"
-	sessionLogFileName := fmt.Sprintf("../audit/%s.log", sessionID)
+	sessionLogFileName := fmt.Sprintf("./audit/%s.log", SESSION_ID)
 	sessionIO := MakeSessIO(sessionLogFileName)
 
 	playersInSession := []PlayerConn{}
@@ -171,7 +176,7 @@ func main() {
 	for i := range playersInSession {
 		playerSession := playersInSession[i]
 		wg.Add(1)
-		connectionLogFileName := fmt.Sprintf("../audit/%s.log", playerSession.sessionId)
+		connectionLogFileName := fmt.Sprintf("./audit/%s.log", playerSession.sessionId)
 		connIO := MakeConnIO(connectionLogFileName)
 
 		go play(connIO, &wg, roundCond, &currRound, &playerSession)
