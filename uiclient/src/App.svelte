@@ -11,6 +11,7 @@
   import LandingPage from './lib/LandingPage.svelte';
   import SignupButton from './lib/SignupButton.svelte';
   import GameView from './lib/GameView.svelte';
+  import AudioPlayer from './lib/AudioPlayer.svelte'
 
   var session = new Session();
 
@@ -73,6 +74,7 @@
   {:else}
     <GameView on:hit={handleSendHit} on:stand={handleSendStand} on:leave={handleSendLeave} on:split={handleSendSplit}></GameView>
   {/if}
+  <AudioPlayer></AudioPlayer>
 </main>
 
 <style>

@@ -1,6 +1,7 @@
 import { 
   dealerHandStore, playersStore, isConnected, hasGameStarted, NewPlayerRequest,
-  newPlayerRequestStore, isGameOver, currBetStore, currTurn, LoginRequest, isLoggedIn, currPlayerName, showLogin, showSignup
+  newPlayerRequestStore, isGameOver, currBetStore, currTurn, LoginRequest, isLoggedIn, currPlayerName, showLogin, showSignup,
+  playWinSound,
 } from './stores'
 import { get } from 'svelte/store'
 import type { Player, Hand } from './stores';
@@ -135,6 +136,7 @@ export default class Session {
         break;
       case "Blackjack":
         console.log("Blackjack");
+        playWinSound.update((value) => !value)
         break;
       default:
         console.log("Hand state message not recognized");

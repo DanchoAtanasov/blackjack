@@ -2,12 +2,13 @@
 <script>
   import { createEventDispatcher } from 'svelte';
   import { get } from 'svelte/store';
-  import {currTurn, currPlayerName} from '../stores'
+  import {currTurn, currPlayerName, playDealSound} from '../stores'
 
   const dispatch = createEventDispatcher();
 
   function sendHit() {
     dispatch('hit', {});
+    playDealSound.update((value) => !value);
   }
 
   var isDisabled = true;

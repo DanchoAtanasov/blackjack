@@ -38,6 +38,10 @@ export const hasGameStarted = writable(false);
 export const isGameOver = writable(false);
 export const currBetStore = writable(0);
 
+// Sound trigger stores
+export const playDealSound = writable(false);
+export const playWinSound = writable(false);
+
 export const dealerHandStore = writable<Hand>();
 
 type Players = { [name: string]: Player };
